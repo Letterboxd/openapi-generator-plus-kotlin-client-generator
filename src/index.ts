@@ -1,11 +1,10 @@
-import { CodegenSchemaType, CodegenGeneratorContext, CodegenGenerator, CodegenConfig, CodegenDocument, CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenOneOfStrategy, CodegenLogLevel, isCodegenInterfaceSchema, isCodegenObjectSchema, CodegenSchemaPurpose, CodegenGeneratorType, isCodegenEnumSchema, isCodegenWrapperSchema, isCodegenOneOfSchema, isCodegenHierarchySchema, CodegenNativeType } from '@openapi-generator-plus/types'
-import { CodegenOptionsKotlin } from './types'
-import path from 'path'
-import Handlebars from 'handlebars'
-import { loadTemplates, emit, registerStandardHelpers } from '@openapi-generator-plus/handlebars-templates'
-import { javaLikeGenerator, ConstantStyle, JavaLikeContext, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
 import { commonGenerator, configBoolean, configObject, configString, debugStringify } from '@openapi-generator-plus/generator-common'
-import { promises as fs } from 'fs'
+import { emit, loadTemplates, registerStandardHelpers } from '@openapi-generator-plus/handlebars-templates'
+import { ConstantStyle, JavaLikeContext, javaLikeGenerator, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
+import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenOneOfStrategy, CodegenSchemaType, isCodegenEnumSchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenWrapperSchema } from '@openapi-generator-plus/types'
+import Handlebars from 'handlebars'
+import path from 'path'
+import { CodegenOptionsKotlin } from './types'
 
 export { CodegenOptionsKotlin as CodegenOptionsTypeScript } from './types'
 
@@ -22,12 +21,27 @@ function escapeString(value: string | number | boolean) {
 	return value
 }
 
+/**
+ * Turns a Java package name into a path
+ * @param packageName Java package name
+ */
+export function packageToPath(packageName: string): string {
+	return packageName.replace(/\./g, path.sep)
+}
+
 function computeCustomTemplatesPath(configPath: string | undefined, customTemplatesPath: string) {
 	if (configPath) {
 		return path.resolve(path.dirname(configPath), customTemplatesPath) 
 	} else {
 		return customTemplatesPath
 	}
+}
+
+function computeRelativeSourceOutputPath(config: CodegenConfig) {
+	const gradle = config.gradle
+	const defaultPath = gradle ? path.join('src', 'main', 'kotlin') : ''
+	
+	return configString(config, 'relativeSourceOutputPath', defaultPath)
 }
 
 function toSafeTypeForComposing(nativeType: string): string {
@@ -75,36 +89,39 @@ export function chainKotlinGeneratorContext(base: KotlinGeneratorContext, add: P
 	return result
 }
 
-/* https://openapi-generator.tech/docs/generators/swift5 */
+/* https://kotlinlang.org/docs/keyword-reference.html#hard-keywords */
 const RESERVED_WORDS = [
-	'Any', 'AnyObject', 'Array', 'Bool', 'COLUMN', 'Character', 'Class', 'ClosedRange', 'Codable', 'CountableClosedRange', 'CountableRange', 'Data', 'Decodable', 'Dictionary',
-	'Double', 'Encodable', 'Error', 'ErrorResponse', 'FILE', 'FUNCTION', 'Float', 'Float32', 'Float64', 'Float80', 'Int', 'Int16', 'Int32', 'Int64', 'Int8', 'LINE', 'OptionSet',
-	'Optional', 'Protocol', 'Range', 'Response', 'Self', 'Set', 'StaticString', 'String', 'Type', 'UInt', 'UInt16', 'UInt32', 'UInt64', 'UInt8', 'URL', 'Unicode', 'Void', '_',
-	'as', 'associatedtype', 'associativity', 'break', 'case', 'catch', 'class', 'continue', 'convenience', 'default', 'defer', 'deinit', 'didSet', 'do', 'dynamic', 'dynamicType',
-	'else', 'enum', 'extension', 'fallthrough', 'false', 'fileprivate', 'final', 'for', 'func', 'get', 'guard', 'if', 'import', 'in', 'indirect', 'infix', 'init', 'inout',
-	'internal', 'is', 'lazy', 'left', 'let', 'mutating', 'nil', 'none', 'nonmutating', 'open', 'operator', 'optional', 'override', 'postfix', 'precedence', 'prefix', 'private',
-	'protocol', 'public', 'repeat', 'required', 'rethrows', 'return', 'right', 'self', 'set', 'static', 'struct', 'subscript', 'super', 'switch', 'throw', 'throws', 'true',
-	'try', 'typealias', 'unowned', 'var', 'weak', 'where', 'while', 'willSet',
-	'LocalDate', 'LocalTime', 'OffsetDateTime', 'Decimal', 'String', 'Void',
-	'unknown', // for our enum cases
+	'as', 'break', 'class', 'continue', 'do', 'else', 'false', 'for', 'fun', 'if', 'in', 'interface', 'is', 'null', 'object', 'package',
+	'return', 'super', 'this', 'throw', 'true', 'try', 'typealias', 'typeof', 'val', 'var', 'when', 'while',
 ]
 
 export function options(config: CodegenConfig, context: KotlinGeneratorContext): CodegenOptionsKotlin {
-	const pkg = configObject(config, 'package', {})
-	const packageName = configString(pkg, 'name', 'Api', 'package.')
-	const defaultRelativeSourceOutputPath = `Sources/${packageName}`
+	const packageName = configString(config, 'package', 'com.example')
+	const apiPackage = configString(config, 'apiPackage', packageName)
 	
-	const relativeSourceOutputPath = configString(config, 'relativeSourceOutputPath', defaultRelativeSourceOutputPath)
 	const customTemplates = configString(config, 'customTemplates', undefined)
+
+	const gradle = configObject(config, 'gradle', undefined)
 
 	const options: CodegenOptionsKotlin = {
 		...javaLikeOptions(config, createJavaLikeContext(context)),
-		relativeSourceOutputPath,
+		apiPackage,
+		modelPackage: configString(config, 'modelPackage', `${packageName}.model`),
 		customTemplatesPath: customTemplates ? computeCustomTemplatesPath(config.configPath, customTemplates) : null,
 		hideGenerationTimestamp: configBoolean(config, 'hideGenerationTimestamp', false),
-		package: {
-			name: packageName,
-		},
+
+		dateImplementation: configString(config, 'dateImplementation', 'java.time.LocalDate'),
+		timeImplementation: configString(config, 'timeImplementation', 'java.time.LocalTime'),
+		dateTimeImplementation: configString(config, 'dateTimeImplementation', 'java.time.OffsetDateTime'),
+		binaryRepresentation: configString(config, 'binaryRepresentation', 'byte[]'),
+
+		gradle: gradle ? {
+			groupId: configString(gradle, 'groupId', 'com.example', 'gradle.'),
+			version: configString(gradle, 'version', '0.0.1', 'gradle.'),
+			versions: configObject(gradle, 'versions', {}, 'gradle.'),
+		} : null,
+
+		relativeSourceOutputPath: computeRelativeSourceOutputPath(config),
 	}
 
 	return options
@@ -137,43 +154,115 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				}
 				return defaultValue.literalValue
 			}
+	
+			const { type, format, required, nullable, schemaType } = options
 			if (value === null) {
-				return 'nil'
+				if (nullable) {
+					return 'null'
+				}
+
+				const defaultValue = context.generator().defaultValue(options)
+				if (defaultValue === null) {
+					return null
+				}
+				return defaultValue.literalValue
 			}
-
-			const { type, format, schemaType } = options
-
+	
 			if (schemaType === CodegenSchemaType.ENUM) {
 				return `${options.nativeType.concreteType}.${context.generator().toEnumMemberName(String(value))}`
 			}
 
+			/* We use the same logic as in nativeTypeUsageTransformer  */
+			const primitive = required && !nullable
+	
 			switch (type) {
 				case 'integer': {
-					return `${value}`
+					if (typeof value === 'string') {
+						const parsedValue = parseInt(value)
+						if (isNaN(parsedValue)) {
+							throw new Error(`toLiteral with type integer called with non-number: ${typeof value} (${value})`)
+						}
+						value = parsedValue
+					}
+					if (typeof value !== 'number') {
+						throw new Error(`toLiteral with type integer called with non-number: ${typeof value} (${value})`)
+					}
+
+					if (format === 'int32' || !format) {
+						return !primitive ? `java.lang.Integer.valueOf(${value})` : `${value}`
+					} else if (format === 'int64') {
+						return !primitive ? `java.lang.Long.valueOf(${value}L)` : `${value}l`
+					} else {
+						throw new Error(`Unsupported ${type} format: ${format}`)
+					}
 				}
 				case 'number': {
-					return `${value}`
+					if (typeof value === 'string') {
+						const parsedValue = parseFloat(value)
+						if (isNaN(parsedValue)) {
+							throw new Error(`toLiteral with type number called with non-number: ${typeof value} (${value})`)
+						}
+						value = parsedValue
+					}
+					if (typeof value !== 'number') {
+						throw new Error(`toLiteral with type number called with non-number: ${typeof value} (${value})`)
+					}
+
+					if (!format) {
+						return `new java.math.BigDecimal("${value}")`
+					} else if (format === 'float') {
+						return !primitive ? `java.lang.Float.valueOf(${value}f)` : `${value}f`
+					} else if (format === 'double') {
+						return !primitive ? `java.lang.Double.valueOf(${value}d)` : `${value}d`
+					} else {
+						throw new Error(`Unsupported ${type} format: ${format}`)
+					}
 				}
 				case 'string': {
-					if (format === 'date') {
-						return `DateFormatter.ISO8601DATE.date(from: "${value}")`
-					} else if (format === 'time') {
-						return `DateFormatter.ISO8601TIME.date(from: "${value}")`
-					} else if (format === 'date-time') {
-						return `DateFormatter.ISO8601DATETIME.date(from: "${value}")`
+					if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+						throw new Error(`toLiteral with type string called with unsupported type: ${typeof value} (${value})`)
+					}
+
+					if (format === 'byte') {
+						return `"${escapeString(value)}"`
 					} else if (format === 'binary') {
-						return `"${escapeString(String(value))}".data(using: .utf8)!`
+						return `"${escapeString(value)}".getBytes(java.nio.charset.StandardCharsets.UTF_8)`
+					} else if (format === 'date') {
+						return `${generatorOptions.dateImplementation}.parse("${escapeString(value)}")`
+					} else if (format === 'time') {
+						return `${generatorOptions.timeImplementation}.parse("${escapeString(value)}")`
+					} else if (format === 'date-time') {
+						return `${generatorOptions.dateTimeImplementation}.parse("${escapeString(value)}")`
+					} else if (format === 'uuid') {
+						return `java.util.UUID.fromString("${escapeString(value)}")`
 					} else {
-						return `"${escapeString(String(value))}"`
+						return `"${escapeString(value)}"`
 					}
 				}
 				case 'boolean':
-					return `${value}`
+					if (typeof value === 'string') {
+						value = value.toLowerCase() === 'true'
+					}
+					if (typeof value === 'number') {
+						value = value !== 0
+					}
+					if (typeof value !== 'boolean') {
+						throw new Error(`toLiteral with type boolean called with non-boolean: ${typeof value} (${value})`)
+					}
+
+					return !primitive ? `java.lang.Boolean.valueOf(${value})` : `${value}`
 				case 'object':
-				case 'anyOf':
-				case 'oneOf':
-					context.log(CodegenLogLevel.WARN, `Literal value of type ${typeof value} is unsupported for schema type object: ${debugStringify(value)}`)
-					return 'nil'
+					if (typeof value === 'string') {
+						if (value) {
+							return value
+						} else {
+							return 'null'
+						}
+					} else {
+						context.log(CodegenLogLevel.WARN, `Literal is unsupported for schema type object: ${debugStringify(value)}`)
+						return 'null'
+					}
+					break
 				case 'file':
 					throw new Error(`Cannot format literal for type ${type}`)
 				case 'array': {
@@ -182,31 +271,37 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (!component) {
 						throw new Error(`toLiteral cannot format array literal without a component type: ${value}`)
 					}
-					return `[${arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component })).join(', ')}]`
+					return `java.util.Arrays.asList(${arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component })).join(', ')})`
 				}
 			}
-
-			throw new Error(`Unsupported type name: ${type}`)
+	
+			throw new Error(`Unsupported literal type name "${type}" in options: ${debugStringify(options)}`)
 		},
 		toNativeType: (options) => {
-			const { schemaType, format } = options
+			const { format, schemaType, vendorExtensions } = options
 
+			/* Note that we return separate componentTypes in this function in case the type
+			   is transformed, using nativeTypeTransformer, and the native type becomes primitive
+			   as the component type must still be non-primitive.
+			 */
+			if (vendorExtensions && vendorExtensions['x-kotlin-type']) {
+				return new context.NativeType(String(vendorExtensions['x-kotlin-type']))
+			}
+			
 			/* See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#data-types */
 			switch (schemaType) {
 				case CodegenSchemaType.INTEGER: {
-					if (!format) {
+					if (format === 'int32' || !format) {
 						return new context.NativeType('Int')
-					} else if (format === 'int32') {
-						return new context.NativeType('Int32')
 					} else if (format === 'int64') {
-						return new context.NativeType('Int64')
+						return new context.NativeType('Long')
 					} else {
 						throw new Error(`Unsupported integer format: ${format}`)
 					}
 				}
 				case CodegenSchemaType.NUMBER: {
 					if (!format) {
-						return new context.NativeType('Decimal')
+						return new context.NativeType('java.math.BigDecimal')
 					} else if (format === 'float') {
 						return new context.NativeType('Float')
 					} else if (format === 'double') {
@@ -216,45 +311,73 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					}
 				}
 				case CodegenSchemaType.DATE:
-					return new context.NativeType('LocalDate')
+					return new context.NativeType(generatorOptions.dateImplementation, {
+						serializedType: 'String',
+					})
 				case CodegenSchemaType.TIME:
-					return new context.NativeType('LocalTime')
+					return new context.NativeType(generatorOptions.timeImplementation, {
+						serializedType: 'String',
+					})
 				case CodegenSchemaType.DATETIME:
-					return new context.NativeType('OffsetDateTime')
-				case CodegenSchemaType.STRING:
-					if (format === 'url') {
-						return new context.NativeType('URL')
+					return new context.NativeType(generatorOptions.dateTimeImplementation, {
+						serializedType: 'String',
+					})
+				case CodegenSchemaType.STRING: {
+					if (format === 'byte') {
+						/* base64 encoded characters */
+						return new context.NativeType('String')
+					} else if (format === 'uuid') {
+						return new context.NativeType('java.util.UUID', {
+							serializedType: 'String',
+						})
+					} else if (format === 'url') {
+						return new context.NativeType('org.w3c.dom.url.URL', {
+							serializedType: 'String',
+						})
 					} else {
 						return new context.NativeType('String')
 					}
-				case CodegenSchemaType.BOOLEAN:
-					return new context.NativeType('Bool')
-				case CodegenSchemaType.BINARY:
-					return new context.NativeType('Data')
+				}
+				case CodegenSchemaType.BOOLEAN: {
+					return new context.NativeType('Boolean')
+				}
+				case CodegenSchemaType.BINARY: {
+					return new context.NativeType(generatorOptions.binaryRepresentation)
+				}
 			}
-
+	
 			throw new Error(`Unsupported schema type: ${schemaType}`)
 		},
 		toNativeObjectType: function(options) {
 			const { scopedName } = options
-			let modelName = generatorOptions.package.name
+			let modelName = `${generatorOptions.modelPackage}`
 			for (const name of scopedName) {
 				modelName += `.${context.generator().toClassName(name)}`
 			}
 			return new context.NativeType(modelName)
 		},
 		toNativeArrayType: (options) => {
-			const { componentNativeType } = options
-			return new context.TransformingNativeType(componentNativeType, {
-				default: (nativeType) => `[${toSafeTypeForComposing(nativeType.componentType ? nativeType.componentType.nativeType : nativeType.nativeType)}]`,
-			})
+			const { componentNativeType, uniqueItems } = options
+			if (uniqueItems) {
+				return new context.TransformingNativeType(componentNativeType, {
+					default: (nativeType) => `kotlin.collections.List<${(nativeType.componentType || nativeType).nativeType}>`,
+					literalType: () => 'kotlin.collections.List',
+					concreteType: (nativeType) => `${(nativeType.componentType || nativeType).nativeType}`,
+				})
+			} else {
+				return new context.TransformingNativeType(componentNativeType, {
+					default: (nativeType) => `kotlin.collections.List<${(nativeType.componentType || nativeType).nativeType}>`,
+					literalType: () => 'kotlin.collections.List',
+					concreteType: (nativeType) => `${(nativeType.componentType || nativeType).nativeType}`,
+				})
+			}
 		},
 		toNativeMapType: (options) => {
 			const { keyNativeType, componentNativeType } = options
 			return new context.ComposingNativeType([keyNativeType, componentNativeType], {
-				default: (nativeTypes) => {
-					return `[${nativeTypes[0].componentType ? nativeTypes[0].componentType.nativeType : nativeTypes[0].nativeType} : ${nativeTypes[1].componentType ? nativeTypes[1].componentType.nativeType : nativeTypes[1].nativeType}]`
-				},
+				default: ([keyNativeType, componentNativeType]) => `kotlin.collections.Map<${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}>`,
+				literalType: () => 'kotlin.collections.Map',
+				concreteType: ([keyNativeType, componentNativeType]) => `${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}`,
 			})
 		},
 		nativeTypeUsageTransformer: ({ nullable, required }) => ({
@@ -272,26 +395,21 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			concreteType: null,
 			parentType: null,
 		}),
-		toSuggestedSchemaName: (name, options) => {
-			if (options.schemaType === CodegenSchemaType.ENUM) {
-				name = `${name}`
-			} else if (options.purpose === CodegenSchemaPurpose.EXTRACTED_INTERFACE) {
-				name = `${name}_protocol`
-			} else if (options.purpose === CodegenSchemaPurpose.ABSTRACT_IMPLEMENTATION) {
-				name = `abstract_${name}`
-			} else if (options.purpose === CodegenSchemaPurpose.IMPLEMENTATION) {
-				name = `${name}_impl`
-			}
-			return name
-		},
 		defaultValue: (options) => {
-			const { schemaType, required } = options
-
-			if (!required) {
-				return { value: null, literalValue: 'nil' }
-			}
-
+			const { schemaType } = options
+	
 			switch (schemaType) {
+				case CodegenSchemaType.ENUM:
+				case CodegenSchemaType.DATE:
+				case CodegenSchemaType.TIME:
+				case CodegenSchemaType.DATETIME:
+				case CodegenSchemaType.BINARY:
+				case CodegenSchemaType.OBJECT:
+				case CodegenSchemaType.STRING:
+				case CodegenSchemaType.ARRAY:
+				case CodegenSchemaType.MAP:
+				case CodegenSchemaType.INTERFACE:
+					return { value: null, literalValue: 'null' }
 				case CodegenSchemaType.NUMBER: {
 					const literalValue = context.generator().toLiteral(0.0, options)
 					if (literalValue === null) {
@@ -306,18 +424,19 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					}
 					return { value: 0, literalValue }
 				}
-				case CodegenSchemaType.BOOLEAN:
-					return { value: false, literalValue: 'false' }
-				case CodegenSchemaType.ARRAY:
-					return { value: [], literalValue: '[]' }
-				case CodegenSchemaType.MAP:
-					return { value: {}, literalValue: '[:]' }
-				default:
-					return null
+				case CodegenSchemaType.BOOLEAN: {
+					const literalValue = context.generator().toLiteral(false, options)
+					if (literalValue === null) {
+						return null
+					}
+					return { value: false, literalValue }
+				}
 			}
+	
+			throw new Error(`Unsupported default value type: ${schemaType}`)
 		},
 		initialValue: (options) => {
-			const { required, defaultValue } = options
+			const { required, schemaType, nativeType, defaultValue } = options
 
 			/*
 			  Default values in the spec are intended to be applied when a client or server receives a
@@ -334,26 +453,48 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			if (defaultValue) {
 				return defaultValue
 			}
-
+	
 			if (!required) {
 				return null
 			}
-
-			/* For required fields, we initialise them with whatever their default value should be */
-			return context.generator().defaultValue(options)
+	
+			/*
+			  We create empty collections for required properties in the Java code. This is because we generate
+			  convenience methods for collections that initialise the collection when adding the first element,
+			  which would mean if we didn't initialise required collection properties we might end up sending
+			  a null collection value if the code didn't _add_ any elements. This would then require
+			  explicitly initialising each required collection in user code, either every time, or whenever
+			  no elements are added to it.
+			  
+			  Therfore we are not able to detect whether the user code has forgotten to populate the collection, like
+			  we are with scalar required properties, so we populate it with an empty collection so we always generate
+			  a valid result.
+			 */
+			switch (schemaType) {
+				case CodegenSchemaType.ARRAY:
+					/* Initialise required array properties with an empty array */
+					return { value: [], literalValue: `listOf<${nativeType.concreteType}>()` }
+				case CodegenSchemaType.MAP:
+					/* Initialise empty map properties with an empty map */
+					return { value: {}, literalValue: `mapOf<${nativeType.concreteType}>()` }
+				default:
+					return null
+			}
 		},
 		operationGroupingStrategy: () => {
 			return context.operationGroupingStrategies.addToGroupsByTagOrPath
 		},
-		allOfStrategy: () => CodegenAllOfStrategy.HIERARCHY,
+
+		allOfStrategy: () => CodegenAllOfStrategy.OBJECT,
 		anyOfStrategy: () => CodegenAnyOfStrategy.OBJECT,
-		oneOfStrategy: () => CodegenOneOfStrategy.NATIVE,
-		supportsInheritance: () => false,
-		supportsMultipleInheritance: () => false, /* As we use structs not classes */
-		nativeCompositionCanBeScope: () => true,
-		nativeComposedSchemaRequiresName: () => true, /* So we can name our enum cases */
+		oneOfStrategy: () => CodegenOneOfStrategy.INTERFACE,
+
+		supportsInheritance: () => true,
+		supportsMultipleInheritance: () => false,
+		nativeCompositionCanBeScope: () => false,
+		nativeComposedSchemaRequiresName: () => false,
 		nativeComposedSchemaRequiresObjectLikeOrWrapper: () => false,
-		interfaceCanBeNested: () => false,
+		interfaceCanBeNested: () => true,
 
 		watchPaths: () => {
 			const result = [path.resolve(__dirname, '..', 'templates')]
@@ -367,14 +508,16 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 		},
 		
 		generatorType: () => CodegenGeneratorType.CLIENT,
-
+	
 		cleanPathPatterns: () => {
 			const relativeSourceOutputPath = generatorOptions.relativeSourceOutputPath
 			
+			const apiPackagePath = packageToPath(generatorOptions.apiPackage)
+			const modelPackagePath = packageToPath(generatorOptions.modelPackage)
+	
 			const result = [
-				path.join(relativeSourceOutputPath, 'Models', '*.swift'),
-				path.join(relativeSourceOutputPath, 'APIs', '*Api.swift'),
-				path.join(relativeSourceOutputPath, 'Support', '*.swift'),
+				path.join(relativeSourceOutputPath, apiPackagePath, '*Api.kt'),
+				path.join(relativeSourceOutputPath, modelPackagePath, '*.kt'),
 			]
 			if (context.additionalCleanPathPatterns) {
 				result.push(...context.additionalCleanPathPatterns())
@@ -408,103 +551,42 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			
 			const relativeSourceOutputPath = generatorOptions.relativeSourceOutputPath
 
+			const apiPackagePath = packageToPath(generatorOptions.apiPackage)
 			for (const group of doc.groups) {
 				const operations = group.operations
 				if (!operations.length) {
 					continue
 				}
 	
-				await emit('api', path.join(outputPath, relativeSourceOutputPath, 'APIs', `${context.generator().toClassName(group.name)}Api.swift`), 
+				await emit('api', path.join(outputPath, relativeSourceOutputPath, apiPackagePath, `${context.generator().toClassName(group.name)}Api.kt`), 
 					{ ...rootContext, ...group, operations, servers: doc.servers }, true, hbs)
 			}
 
+			const modelPackagePath = packageToPath(generatorOptions.modelPackage)
 			for (const schema of context.utils.values(doc.schemas)) {
 				if (isCodegenObjectSchema(schema)) {
-					await emit('pojo', path.join(outputPath, relativeSourceOutputPath, 'Models', `${context.generator().toClassName(schema.name)}.swift`), 
+					await emit('pojo', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
 						{ ...rootContext, pojo: schema }, true, hbs)
 				} else if (isCodegenEnumSchema(schema)) {
-					await emit('enum', path.join(outputPath, relativeSourceOutputPath, 'Models', `${context.generator().toClassName(schema.name)}.swift`), 
+					await emit('enum', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
 						{ ...rootContext, enum: schema }, true, hbs)
 				} else if (isCodegenInterfaceSchema(schema)) {
-					await emit('interface', path.join(outputPath, relativeSourceOutputPath, 'Models', `${context.generator().toClassName(schema.name)}.swift`), 
+					await emit('interface', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
 						{ ...rootContext, interface: schema }, true, hbs)
-				} else if (isCodegenHierarchySchema(schema)) {
-					await emit('hierarchy', path.join(outputPath, relativeSourceOutputPath, 'Models', `${context.generator().toClassName(schema.name)}.swift`), 
-						{ ...rootContext, hierarchy: schema }, true, hbs)
 				} else if (isCodegenWrapperSchema(schema)) {
-					await emit('wrapper', path.join(outputPath, relativeSourceOutputPath, 'Models', `${context.generator().toClassName(schema.name)}.swift`), 
+					await emit('wrapper', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
 						{ ...rootContext, schema }, true, hbs)
-				} else if (isCodegenOneOfSchema(schema)) {
-					await emit('oneOf', path.join(outputPath, relativeSourceOutputPath, 'Models', `${context.generator().toClassName(schema.name)}.swift`), 
-						{ ...rootContext, oneOf: schema }, true, hbs)
 				}
 			}
-
-			/* Support */
-			for (const file of await fs.readdir(path.resolve(__dirname, '..', 'templates', 'support'))) {
-				const fileBase = path.basename(file, path.extname(file))
-				await emit(`support/${fileBase}`, path.join(outputPath, relativeSourceOutputPath, 'Support', fileBase),
-					{ ...rootContext }, true, hbs)
+	
+			const gradle = generatorOptions.gradle
+			if (gradle) {
+				await emit('build.gradle', path.join(outputPath, 'build.gradle'), { ...rootContext, ...gradle }, false, hbs)
 			}
-
-			/* Security */
-			for (const file of await fs.readdir(path.resolve(__dirname, '..', 'templates', 'security'))) {
-				const fileBase = path.basename(file, path.extname(file))
-				await emit(`security/${fileBase}`, path.join(outputPath, relativeSourceOutputPath, 'Security', fileBase),
-					{ ...rootContext, securitySchemes: doc.securitySchemes }, true, hbs)
-			}
-
-			await emit('Package', path.join(outputPath, 'Package.swift'),
-				{ ...rootContext }, true, hbs)
 	
 			if (context.additionalExportTemplates) {
 				await context.additionalExportTemplates(outputPath, doc, hbs, rootContext)
 			}
-		},
-
-		postProcessDocument: (doc) => {
-			if (!generatorOptions.package.name) {
-				generatorOptions.package.name = context.generator().toClassName(doc.info.title)
-			}
-		},
-
-		postProcessSchema(schema, helper) {
-			function suggestedNameForType(type: CodegenNativeType): string {
-				if (type.componentType) {
-					return `${type.componentType.nativeType}_array`
-				} else {
-					return type.nativeType
-				}
-			}
-			if (isCodegenOneOfSchema(schema)) {
-				/* oneOf schemas turn into an enum, so each member needs a `name` for our enum */
-				for (const comp of schema.composes) {
-					if (comp.name === null) {
-						comp.name = helper.uniqueName(suggestedNameForType(comp.nativeType), helper.scopeOf(schema), comp.schemaType)
-					}
-				}
-			}
-		},
-
-		checkPropertyCompatibility: (parentProp, childProp) => {
-			if (!baseGenerator.checkPropertyCompatibility(parentProp, childProp)) {
-				return false
-			}
-
-			/* Because in Swift we use `Nullable` if a property is nullable, properties are not compatible
-			   if their nullability varies.
-			 */
-			if (!parentProp.nullable !== !childProp.nullable) {
-				return false
-			}
-
-			/* Because in Swift we use a protocol for allOf, we can't comply if the required status mismatches at all,
-			   for the same reason as nullability above.
-			 */
-			if (parentProp.required !== childProp.required) {
-				return false
-			}
-			return true
 		},
 	}
 }

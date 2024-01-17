@@ -5,8 +5,9 @@ import { CodegenResult, createCodegenResult } from '@openapi-generator-plus/test
 import createGenerator from '..'
 
 export const DEFAULT_CONFIG: CodegenConfig = {
-	package: {
-		name: 'TestModule',
+	package: 'com.example.kotlin.api',
+	gradle: {
+		groupId: 'com.example.kotlin.api',
 	},
 }
 
@@ -17,7 +18,7 @@ export async function prepare(spec: string, config?: CodegenConfig): Promise<Cod
 export async function build(basePath: string): Promise<void> {
 	return new Promise(function(resolve, reject) {
 		exec(
-			'swift build',
+			'gradle build',
 			{
 				cwd: basePath,
 			},

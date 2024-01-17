@@ -4,10 +4,25 @@ import { JavaLikeOptions } from '@openapi-generator-plus/java-like-generator-hel
  * Options specific to the template that the user can provide to the code generation process.
  */
 export interface CodegenOptionsKotlin extends JavaLikeOptions {
+	apiPackage: string
+	modelPackage: string
+
 	relativeSourceOutputPath: string
 	customTemplatesPath: string | null
 	hideGenerationTimestamp: boolean
-	package: {
-		name: string
+
+	dateImplementation: string
+	timeImplementation: string
+	dateTimeImplementation: string
+	binaryRepresentation: string
+
+	gradle: GradleOptions | null
+}
+
+export interface GradleOptions {
+	groupId: string
+	version: string
+	versions: {
+		[name: string]: unknown
 	}
 }
