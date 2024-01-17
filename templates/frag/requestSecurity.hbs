@@ -1,0 +1,26 @@
+{{#if securityRequirements}}
+var didAuthenticate = false
+var lastError: Error?
+
+{{#each securityRequirements.requirements}}
+if !didAuthenticate {
+    var authedRequest = localVarRequest
+    do {
+        {{#each schemes}}
+        if let securityClient = self.configuration.securityClient {
+            try await securityClient.authorize(request: &authedRequest, securityScheme: .{{{identifier scheme.name}}}, scopes: [{{#each scopes}}{{{stringLiteral name}}}{{#unless @last}}, {{/unless}}{{/each}}])
+        }
+        {{/each}}
+        didAuthenticate = true
+        localVarRequest = authedRequest
+    } catch (let error) {
+        lastError = error
+    }
+}
+{{/each}}
+{{#unless securityRequirements.optional}}
+if !didAuthenticate {
+    throw lastError!
+}
+{{/unless}}
+{{/if}}

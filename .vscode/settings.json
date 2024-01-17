@@ -1,0 +1,11 @@
+{
+	"eslint.validate": [
+	  "javascript",
+	  "typescript"
+	],
+	"window.title": "${activeEditorShort}${separator}${rootName}",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	},
+	"typescript.tsdk": "node_modules/typescript/lib"
+}
