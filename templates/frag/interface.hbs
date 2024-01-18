@@ -1,8 +1,8 @@
 {{>frag/schemaDocumentation}}
-public protocol {{{name}}} {
+interface {{{name}}} {
 {{#each properties}}
     {{>frag/propertyDocumentation}}
-    var {{{name}}}: {{{nativeType}}} { {{#if readOnly}}get{{else}}get set{{/if}} }
+    {{#if readOnly}}val{{else}}var{{/if}} {{{name}}}: {{{nativeType}}}
 {{/each}}
 
     {{>frag/nestedSchemas}}
