@@ -1,7 +1,10 @@
 {{>frag/schemaDocumentation}}
 @Serializable
-enum class {{{name}}}(val value: kotlin.String) {
+sealed class {{{name}}}(val value: kotlin.String) {
+    @Serializable
+    data class Unknown(value: kotlin.String): {{{name}}}(value)
 {{#each enumValues}}
-    @SerialName(value = {{{literalValue}}}) {{{name}}}({{{literalValue}}}){{#unless @last}},{{else}};{{/unless}}
+    @Serializable
+    data object {{{value}}}: {{{../name}}}({{{literalValue}}})
 {{/each}}
 }
