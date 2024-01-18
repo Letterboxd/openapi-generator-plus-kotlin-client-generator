@@ -110,10 +110,10 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		customTemplatesPath: customTemplates ? computeCustomTemplatesPath(config.configPath, customTemplates) : null,
 		hideGenerationTimestamp: configBoolean(config, 'hideGenerationTimestamp', false),
 
-		dateImplementation: configString(config, 'dateImplementation', 'java.time.LocalDate'),
-		timeImplementation: configString(config, 'timeImplementation', 'java.time.LocalTime'),
-		dateTimeImplementation: configString(config, 'dateTimeImplementation', 'java.time.OffsetDateTime'),
-		binaryRepresentation: configString(config, 'binaryRepresentation', 'byte[]'),
+		dateImplementation: configString(config, 'dateImplementation', 'kotlinx.datetime.LocalDate'),
+		timeImplementation: configString(config, 'timeImplementation', 'kotlinx.datetime.LocalTime'),
+		dateTimeImplementation: configString(config, 'dateTimeImplementation', 'kotlinx.datetime.Instant'),
+		binaryRepresentation: configString(config, 'binaryRepresentation', 'kotlin.ByteArray'),
 
 		gradle: gradle ? {
 			groupId: configString(gradle, 'groupId', 'com.example', 'gradle.'),
@@ -172,9 +172,6 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				return `${options.nativeType.concreteType}.${context.generator().toEnumMemberName(String(value))}`
 			}
 
-			/* We use the same logic as in nativeTypeUsageTransformer  */
-			const primitive = required && !nullable
-	
 			switch (type) {
 				case 'integer': {
 					if (typeof value === 'string') {
@@ -189,9 +186,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					}
 
 					if (format === 'int32' || !format) {
-						return !primitive ? `java.lang.Integer.valueOf(${value})` : `${value}`
+						return `${value}`
 					} else if (format === 'int64') {
-						return !primitive ? `java.lang.Long.valueOf(${value}L)` : `${value}l`
+						return `${value}L`
 					} else {
 						throw new Error(`Unsupported ${type} format: ${format}`)
 					}
@@ -211,9 +208,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (!format) {
 						return `new java.math.BigDecimal("${value}")`
 					} else if (format === 'float') {
-						return !primitive ? `java.lang.Float.valueOf(${value}f)` : `${value}f`
+						return `${value}f`
 					} else if (format === 'double') {
-						return !primitive ? `java.lang.Double.valueOf(${value}d)` : `${value}d`
+						return `${value}`
 					} else {
 						throw new Error(`Unsupported ${type} format: ${format}`)
 					}
@@ -226,7 +223,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (format === 'byte') {
 						return `"${escapeString(value)}"`
 					} else if (format === 'binary') {
-						return `"${escapeString(value)}".getBytes(java.nio.charset.StandardCharsets.UTF_8)`
+						return `"${escapeString(value)}".getByteArray(kotlin.text.Charsets.UTF_8)`
 					} else if (format === 'date') {
 						return `${generatorOptions.dateImplementation}.parse("${escapeString(value)}")`
 					} else if (format === 'time') {
@@ -250,7 +247,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 						throw new Error(`toLiteral with type boolean called with non-boolean: ${typeof value} (${value})`)
 					}
 
-					return !primitive ? `java.lang.Boolean.valueOf(${value})` : `${value}`
+					return `${value}`
 				case 'object':
 					if (typeof value === 'string') {
 						if (value) {
@@ -292,9 +289,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			switch (schemaType) {
 				case CodegenSchemaType.INTEGER: {
 					if (format === 'int32' || !format) {
-						return new context.NativeType('Int')
+						return new context.NativeType('kotlin.Int')
 					} else if (format === 'int64') {
-						return new context.NativeType('Long')
+						return new context.NativeType('kotlin.Long')
 					} else {
 						throw new Error(`Unsupported integer format: ${format}`)
 					}
@@ -303,9 +300,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (!format) {
 						return new context.NativeType('java.math.BigDecimal')
 					} else if (format === 'float') {
-						return new context.NativeType('Float')
+						return new context.NativeType('kotlin.Float')
 					} else if (format === 'double') {
-						return new context.NativeType('Double')
+						return new context.NativeType('kotlin.Double')
 					} else {
 						throw new Error(`Unsupported number format: ${format}`)
 					}
@@ -331,15 +328,15 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 							serializedType: 'String',
 						})
 					} else if (format === 'url') {
-						return new context.NativeType('org.w3c.dom.url.URL', {
+						return new context.NativeType('java.net.URL', {
 							serializedType: 'String',
 						})
 					} else {
-						return new context.NativeType('String')
+						return new context.NativeType('kotlin.String')
 					}
 				}
 				case CodegenSchemaType.BOOLEAN: {
-					return new context.NativeType('Boolean')
+					return new context.NativeType('kotlin.Boolean')
 				}
 				case CodegenSchemaType.BINARY: {
 					return new context.NativeType(generatorOptions.binaryRepresentation)
