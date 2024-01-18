@@ -2,18 +2,18 @@ group '{{{groupId}}}'
 version '{{{version}}}'
 
 wrapper {
-    gradleVersion = '{{lookup gradle.versions 'gradle' '7.5'}}'
+    gradleVersion = '{{lookup gradle.versions 'gradle' '8.5'}}'
     distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
 }
 
 buildscript {
-    ext.kotlin_version = '{{lookup gradle.versions 'kotlin' '1.8.10'}}'
-    ext.ktor_version = '{{lookup gradle.versions 'ktor' '2.2.3'}}'
-    ext.kotlinx_serialization_version = '{{lookup gradle.versions 'kotlinx_serialization' '1.4.1'}}'
-    ext.kotlinx_datetime_version = '{{lookup gradle.versions 'kotlinx_datetime' '0.4.0'}}'
+    ext.kotlin_version = '{{lookup gradle.versions 'kotlin' '1.9.22'}}'
+    ext.ktor_version = '{{lookup gradle.versions 'ktor' '2.3.7'}}'
+    ext.kotlinx_serialization_version = '{{lookup gradle.versions 'kotlinx_serialization' '1.6.2'}}'
+    ext.kotlinx_datetime_version = '{{lookup gradle.versions 'kotlinx_datetime' '0.5.0'}}'
 
     repositories {
-        maven { url "https://repo1.maven.org/maven2" }
+        mavenCentral()
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -26,11 +26,7 @@ apply plugin: 'kotlinx-serialization'
 apply plugin: 'maven-publish'
 
 repositories {
-    maven { url "https://repo1.maven.org/maven2" }
-}
-
-test {
-    useJUnitPlatform()
+    mavenCentral()
 }
 
 dependencies {
