@@ -157,7 +157,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				return defaultValue.literalValue
 			}
 	
-			const { type, format, required, nullable, schemaType } = options
+			const { type, format, nullable, schemaType } = options
 			if (value === null) {
 				if (nullable) {
 					return 'null'
