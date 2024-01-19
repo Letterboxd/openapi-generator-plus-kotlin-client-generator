@@ -5,6 +5,7 @@ import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocum
 import Handlebars from 'handlebars'
 import path from 'path'
 import { CodegenOptionsKotlin } from './types'
+import { promises as fs } from 'fs'
 
 export { CodegenOptionsKotlin as CodegenOptionsTypeScript } from './types'
 
@@ -107,6 +108,7 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		...javaLikeOptions(config, createJavaLikeContext(context)),
 		apiPackage,
 		modelPackage: configString(config, 'modelPackage', `${packageName}.model`),
+		supportPackage: configString(config, 'supportPackage', `${packageName}.support`),
 		customTemplatesPath: customTemplates ? computeCustomTemplatesPath(config.configPath, customTemplates) : null,
 		hideGenerationTimestamp: configBoolean(config, 'hideGenerationTimestamp', false),
 
@@ -579,6 +581,14 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			const gradle = generatorOptions.gradle
 			if (gradle) {
 				await emit('build.gradle', path.join(outputPath, 'build.gradle'), { ...rootContext, ...gradle }, false, hbs)
+			}
+
+			const supportPackagePath = packageToPath(generatorOptions.supportPackage)
+			const files = await fs.readdir(path.resolve(__dirname, '..', 'templates', 'support'))
+			for (const file of files) {
+				const fileBase = path.basename(file, path.extname(file))
+				await emit(`support/${fileBase}`, path.join(outputPath, relativeSourceOutputPath, supportPackagePath, fileBase),
+					{ ...rootContext }, true, hbs)
 			}
 	
 			if (context.additionalExportTemplates) {

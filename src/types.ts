@@ -6,6 +6,7 @@ import { JavaLikeOptions } from '@openapi-generator-plus/java-like-generator-hel
 export interface CodegenOptionsKotlin extends JavaLikeOptions {
 	apiPackage: string
 	modelPackage: string
+	supportPackage: string
 
 	relativeSourceOutputPath: string
 	customTemplatesPath: string | null
