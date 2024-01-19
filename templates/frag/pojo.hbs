@@ -1,24 +1,24 @@
 {{>frag/objectSchemaDocumentation}}
 {{#if deprecated}}
-@Deprecated
+@kotlin.Deprecated(message = "This class is deprecated.")
 {{/if}}
 {{#join '_parents' ', '}}
 {{#each parents}}
-{{{nativeType.parentType}}} /* TODO extends? */
+{{{nativeType.parentType}}}
 {{/each}}
 {{#each implements}}
-{{{nativeType.parentType}}} /* TODO implements? */
+{{{nativeType.parentType}}}
 {{/each}}
 {{/join}}
-@Serializable
+@kotlinx.serialization.Serializable
 data class {{{name}}}{{#if _parents}}: {{{_parents}}}{{/if}} (
     
 {{#each properties}}
     {{>frag/propertyDocumentation}}
     {{#if deprecated}}
-    @Deprecated(message = "This property is deprecated.")
+    @kotlin.Deprecated(message = "This property is deprecated.")
     {{/if}}
-    @SerialName(value = "{{{serializedName}}}")
+    @kotlinx.serialization.SerialName(value = "{{{serializedName}}}")
     val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{#if initialValue}}{{{initialValue.literalValue}}}{{else}}{{{undefinedValueLiteral schema}}}{{/if}}{{/unless}},
 
 {{/each}}

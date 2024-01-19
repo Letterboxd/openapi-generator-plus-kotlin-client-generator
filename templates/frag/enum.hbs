@@ -1,10 +1,13 @@
-@Serializable
 {{>frag/enumSchemaDocumentation}}
+@kotlinx.serialization.Serializable
 sealed class {{{name}}}(val value: kotlin.String) {
-    @Serializable
+
+    @kotlinx.serialization.Serializable
     data class Unknown(value: kotlin.String): {{{name}}}(value)
+
 {{#each enumValues}}
-    @Serializable
+    @kotlinx.serialization.Serializable
     data object {{{value}}}: {{{../name}}}({{{literalValue}}})
+    
 {{/each}}
 }
