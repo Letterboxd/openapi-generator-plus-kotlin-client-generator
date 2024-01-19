@@ -1,0 +1,18 @@
+{{#or description externalDocs properties}}
+/**
+{{#if description}}
+ * {{#indent ' * '}}{{#if description}}{{{description}}}{{/if}}{{/indent}}
+{{/if}}
+{{#if externalDocs}}
+ * <p>External documentation: {{{externalDocs.url}}}</p>
+{{#if externalDocs.description}}
+ * {{#indent ' * '}}{{{md externalDocs.description}}}{{/indent}}
+{{/if}}
+{{/if}}
+{{#if properties}}
+{{#each properties}}
+* @param {{{name}}} {{#if description}}{{{description}}}{{/if}}
+{{/each}}
+{{/if}}
+ */
+{{/or}}
