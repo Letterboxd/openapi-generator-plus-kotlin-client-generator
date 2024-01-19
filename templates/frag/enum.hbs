@@ -1,5 +1,5 @@
-{{>frag/schemaDocumentation}}
 @Serializable
+{{>frag/enumSchemaDocumentation}}
 sealed class {{{name}}}(val value: kotlin.String) {
     @Serializable
     data class Unknown(value: kotlin.String): {{{name}}}(value)
