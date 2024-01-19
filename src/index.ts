@@ -1,7 +1,7 @@
 import { commonGenerator, configBoolean, configObject, configString, debugStringify } from '@openapi-generator-plus/generator-common'
 import { emit, loadTemplates, registerStandardHelpers } from '@openapi-generator-plus/handlebars-templates'
 import { ConstantStyle, JavaLikeContext, javaLikeGenerator, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
-import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenOneOfStrategy, CodegenSchemaType, isCodegenEnumSchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenWrapperSchema } from '@openapi-generator-plus/types'
+import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenOneOfStrategy, CodegenSchemaType, isCodegenEnumSchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
 import Handlebars from 'handlebars'
 import path from 'path'
 import { CodegenOptionsKotlin } from './types'
@@ -484,7 +484,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 
 		allOfStrategy: () => CodegenAllOfStrategy.OBJECT,
 		anyOfStrategy: () => CodegenAnyOfStrategy.OBJECT,
-		oneOfStrategy: () => CodegenOneOfStrategy.INTERFACE,
+		oneOfStrategy: () => CodegenOneOfStrategy.NATIVE,
 
 		supportsInheritance: () => true,
 		supportsMultipleInheritance: () => false,
@@ -570,9 +570,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				} else if (isCodegenInterfaceSchema(schema)) {
 					await emit('interface', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
 						{ ...rootContext, interface: schema }, true, hbs)
-				} else if (isCodegenWrapperSchema(schema)) {
-					await emit('wrapper', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
-						{ ...rootContext, schema }, true, hbs)
+				} else if (isCodegenOneOfSchema(schema)) {
+					await emit('oneOf', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
+						{ ...rootContext, oneOf: schema }, true, hbs)
 				}
 			}
 	
