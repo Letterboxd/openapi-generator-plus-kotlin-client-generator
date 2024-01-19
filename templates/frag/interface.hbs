@@ -1,6 +1,7 @@
 {{>frag/objectSchemaDocumentation}}
 interface {{{name}}} {
 {{#each properties}}
+
     {{>frag/propertyDocumentation}}
     {{#if readOnly}}val{{else}}var{{/if}} {{{name}}}: {{{nativeType}}}
 {{/each}}
