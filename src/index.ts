@@ -395,7 +395,11 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			parentType: null,
 		}),
 		defaultValue: (options) => {
-			const { schemaType } = options
+			const { schemaType, required } = options
+
+			if (!required) {
+				return { value: null, literalValue: 'null' }
+			}
 	
 			switch (schemaType) {
 				case CodegenSchemaType.ENUM:
