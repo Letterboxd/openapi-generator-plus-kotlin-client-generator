@@ -11,7 +11,7 @@ sealed class {{{name}}} {
 {{/each}}
 {{#if discriminator}}
     @kotlinx.serialization.Serializable
-    data class Unknown(_ discriminatorValue: {{{discriminator.nativeType}}}): {{{name}}}()
+    data class Unknown(val discriminatorValue: {{{discriminator.nativeType}}}): {{{name}}}()
 {{else}}
     @kotlinx.serialization.Serializable
     data object Unknown: {{{name}}}()
