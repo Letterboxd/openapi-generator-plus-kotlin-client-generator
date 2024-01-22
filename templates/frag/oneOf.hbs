@@ -1,14 +1,14 @@
 {{>frag/schemaDocumentation}}
 @kotlinx.serialization.Serializable
 sealed class {{{name}}} {
+
 {{#each composes}}
-{{log 'current context' . }}
 {{#if name}}
     @kotlinx.serialization.Serializable
     data class {{{name}}}(_ value: {{{nativeType}}}): {{{../name}}}()
+
 {{/if}}
 {{/each}}
-
 {{#if discriminator}}
     @kotlinx.serialization.Serializable
     data class Unknown(_ discriminatorValue: {{{discriminator.nativeType}}}): {{{name}}}()
