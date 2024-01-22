@@ -1,13 +1,16 @@
 {{>frag/schemaDocumentation}}
 @kotlinx.serialization.Serializable
-sealed class {{{name}}}(val value: kotlin.String) {
+sealed interface {{{name}}} {
+    val value: kotlin.String
 
     @kotlinx.serialization.Serializable
-    data class Unknown(value: kotlin.String): {{{name}}}(value)
+    data class Unknown(override val value: kotlin.String): {{{name}}}
 
 {{#each enumValues}}
     @kotlinx.serialization.Serializable
-    data object {{{value}}}: {{{../name}}}({{{literalValue}}})
+    data object {{{value}}}: {{{../name}}} {
+        override val value: kotlin.String = {{{literalValue}}}
+    }
     
 {{/each}}
 }
