@@ -1,0 +1,17 @@
+/**
+ * {{>frag/generatedBy}}
+ */
+
+package {{supportPackage}}
+
+object KUUIDSerializer : kotlinx.serialization.KSerializer<java.util.UUID> {
+    override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor = kotlinx.serialization.descriptors.PrimitiveSerialDescriptor("UUID", kotlinx.serialization.descriptors.PrimitiveKind.STRING)
+
+    override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: java.util.UUID) {
+        encoder.encodeString(value.toString())
+    }
+
+    override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): java.util.UUID =
+        java.util.UUID.fromString(decoder.decodeString())
+
+}
