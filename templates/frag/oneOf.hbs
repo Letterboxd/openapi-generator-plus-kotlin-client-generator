@@ -5,7 +5,7 @@ sealed class {{{name}}} {
 {{#each composes}}
 {{#if name}}
     @kotlinx.serialization.Serializable
-    data class {{{name}}}(_ value: {{{nativeType}}}): {{{../name}}}()
+    data class {{{name}}}(val value: {{{nativeType}}}): {{{../name}}}()
 
 {{/if}}
 {{/each}}
