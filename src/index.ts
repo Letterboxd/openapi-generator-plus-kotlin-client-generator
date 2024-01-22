@@ -207,11 +207,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 						throw new Error(`toLiteral with type number called with non-number: ${typeof value} (${value})`)
 					}
 
-					if (!format) {
-						return `new java.math.BigDecimal("${value}")`
-					} else if (format === 'float') {
+					if (format === 'float') {
 						return `${value}f`
-					} else if (format === 'double') {
+					} else if (format === 'double' || !format) {
 						return `${value}`
 					} else {
 						throw new Error(`Unsupported ${type} format: ${format}`)
@@ -290,6 +288,8 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			/* See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#data-types */
 			switch (schemaType) {
 				case CodegenSchemaType.INTEGER: {
+					// TODO, DISCUSS WITH KARL & GRANT : Really...? Why do we want to use int which only has a precision of 32 bit when we are unsure of its format 
+					// instead of long which has more precision and thus support for larger numbers?
 					if (format === 'int32' || !format) {
 						return new context.NativeType('kotlin.Int')
 					} else if (format === 'int64') {
@@ -299,11 +299,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					}
 				}
 				case CodegenSchemaType.NUMBER: {
-					if (!format) {
-						return new context.NativeType('java.math.BigDecimal')
-					} else if (format === 'float') {
+					if (format === 'float') {
 						return new context.NativeType('kotlin.Float')
-					} else if (format === 'double') {
+					} else if (format === 'double' || !format) {
 						return new context.NativeType('kotlin.Double')
 					} else {
 						throw new Error(`Unsupported number format: ${format}`)
