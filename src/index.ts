@@ -492,7 +492,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 		anyOfStrategy: () => CodegenAnyOfStrategy.OBJECT,
 		oneOfStrategy: () => CodegenOneOfStrategy.NATIVE,
 
-		supportsInheritance: () => true,
+		supportsInheritance: () => false,
 		supportsMultipleInheritance: () => false,
 		nativeCompositionCanBeScope: () => false,
 		nativeComposedSchemaRequiresName: () => true,
