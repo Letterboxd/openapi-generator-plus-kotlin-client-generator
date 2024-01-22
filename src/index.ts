@@ -223,7 +223,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (format === 'byte') {
 						return `"${escapeString(value)}"`
 					} else if (format === 'binary') {
-						return `"${escapeString(value)}".getByteArray(kotlin.text.Charsets.UTF_8)`
+						return `"${escapeString(value)}".toByteArray(kotlin.text.Charsets.UTF_8)`
 					} else if (format === 'date') {
 						return `${generatorOptions.dateImplementation}.parse("${escapeString(value)}")`
 					} else if (format === 'time') {
