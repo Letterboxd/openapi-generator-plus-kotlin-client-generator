@@ -382,7 +382,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 		nativeTypeUsageTransformer: ({ nullable, required }) => ({
 			default: function(nativeType, nativeTypeString) {
 				if (nullable) {
-					nativeTypeString = `Nullable<${toSafeTypeForComposing(nativeTypeString)}>`
+					nativeTypeString = `${generatorOptions.supportPackage}.Nullable<${toSafeTypeForComposing(nativeTypeString)}>`
 				}
 				if (!required) {
 					nativeTypeString = `${toSafeTypeForComposing(nativeTypeString)}?`
