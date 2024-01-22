@@ -3,7 +3,7 @@ interface {{{name}}} {
 {{#each properties}}
 
     {{>frag/propertyDocumentation}}
-    {{#if readOnly}}val{{else}}var{{/if}} {{{name}}}: {{{nativeType}}}
+    val {{{name}}}: {{{nativeType}}}
 {{/each}}
 
     {{>frag/nestedSchemas}}
