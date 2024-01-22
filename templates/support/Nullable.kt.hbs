@@ -1,0 +1,19 @@
+/**
+ * {{>frag/generatedBy}}
+ */
+
+package {{supportPackage}}
+
+/**
+ * Contains a value that may be explicitly set to `null` when sent via the API.
+ */
+@kotlinx.serialization.Serializable
+sealed interface Nullable<out T> {
+
+    @kotlinx.serialization.Serializable
+    data class Some<T>(val value: T): Nullable<T>
+    
+    @kotlinx.serialization.Serializable
+    data object Null: Nullable<Nothing>
+
+}
