@@ -291,6 +291,12 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				case CodegenSchemaType.INTEGER: {
 					// TODO, DISCUSS WITH KARL & GRANT : Really...? Why do we want to use int which only has a precision of 32 bit when we are unsure of its format 
 					// instead of long which has more precision and thus support for larger numbers?
+					// 
+					// See also: 
+					// - https://swagger.io/docs/specification/data-models/data-types/#numbers
+					// - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number#number_encoding
+					// - https://www.w3schools.com/js/js_numbers.asp
+
 					if (format === 'int32' || !format) {
 						return new context.NativeType('kotlin.Int')
 					} else if (format === 'int64') {
