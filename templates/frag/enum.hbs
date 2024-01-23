@@ -8,7 +8,7 @@ sealed interface {{{name}}} {
 
 {{#each enumValues}}
     @kotlinx.serialization.Serializable
-    data object {{{value}}}: {{{../name}}} {
+    data object {{className name}}: {{{../name}}} {
         override val value: kotlin.String = {{{literalValue}}}
     }
     
