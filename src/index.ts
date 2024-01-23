@@ -617,5 +617,28 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			}
 		},
 
+		checkPropertyCompatibility: (parentProp, childProp) => {
+			if (!baseGenerator.checkPropertyCompatibility(parentProp, childProp)) {
+				return false
+			}
+
+			/**
+			 * Because in Kotlin we use `Nullable` if a value of a property can be specifically "null",
+			 * properties are not compatible if their nullability varies.
+			 */
+			if (!parentProp.nullable !== !childProp.nullable) {
+				return false
+			}
+
+			/**
+			 * Because in Swift we use a protocol for allOf, 
+			 * we can't comply if the required status mismatches at all, 
+			 * for the same reason as nullability above.
+			 */
+			if (parentProp.required !== childProp.required) {
+				return false
+			}
+			return true
+		},
 	}
 }
