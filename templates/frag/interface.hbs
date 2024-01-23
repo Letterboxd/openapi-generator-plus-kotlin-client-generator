@@ -3,6 +3,9 @@ interface {{{name}}} {
 {{#each properties}}
 
     {{>frag/propertyDocumentation}}
+    {{#if deprecated}}
+    @kotlin.Deprecated(message = "This property is deprecated.")
+    {{/if}}
     val {{{name}}}: {{{nativeType}}}
 {{/each}}
 
