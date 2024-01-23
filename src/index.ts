@@ -269,7 +269,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (!component) {
 						throw new Error(`toLiteral cannot format array literal without a component type: ${value}`)
 					}
-					return `java.util.Arrays.asList(${arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component })).join(', ')})`
+					return `listOf(${arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component })).join(', ')})`
 				}
 			}
 	
