@@ -1,0 +1,23 @@
+/**
+ * {{>frag/generatedBy}}
+ */
+
+package {{supportPackage}}
+
+typealias ConfigurationFinalizeRequestBlock = (request: URLRequest) -> Unit
+
+data class Configuration(
+
+    /** The handler for all security requests. */
+    val cachePolicy: URLRequest.CachePolicy? = nil,
+
+    /** Override the default base path. */
+    val timeoutInterval: TimeInterval = 30,
+    
+    val responseQueue: DispatchQueue? = nil,
+    
+    val securityClient: SecurityClient? = nil,
+    
+    val finalizeRequestBlock: ConfigurationFinalizeRequestBlock? = nil
+
+)
