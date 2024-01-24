@@ -625,11 +625,11 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 
 		postProcessSchema(schema, helper) {
 			function suggestedNameForType(type: CodegenNativeType): string {
-				// if (type.componentType) {
-				// 	return `${type.componentType.nativeType}_array`
-				// } else {
-				return type.nativeType
-				// }
+				if (type.componentType) {
+					return `${type.componentType.nativeType}_array`
+				} else {
+					return type.nativeType
+				}
 			}
 			if (isCodegenOneOfSchema(schema)) {
 				/* oneOf schemas turn into an enum, so each member needs a `name` for our enum */
