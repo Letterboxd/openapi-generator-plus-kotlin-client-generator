@@ -607,7 +607,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 	
 			const gradle = generatorOptions.gradle
 			if (gradle) {
-				await emit('build.gradle', path.join(outputPath, 'build.gradle'), { ...rootContext, ...gradle }, false, hbs)
+				await emit('build.gradle.kts', path.join(outputPath, 'build.gradle.kts'), { ...rootContext, ...gradle }, false, hbs)
 			}
 
 			const supportPackagePath = packageToPath(generatorOptions.supportPackage)

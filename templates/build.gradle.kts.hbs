@@ -1,0 +1,31 @@
+tasks.wrapper {
+    gradleVersion = "{{lookup gradle.versions 'gradle' '8.5'}}"
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
+plugins {
+    val kotlinVersion = "{{lookup gradle.versions 'kotlin' '1.9.22'}}"
+    
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.serialization") version kotlinVersion
+}
+
+group = "{{{groupId}}}"
+version = "{{{version}}}"
+
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
+}
+
+val ktorVersion = "{{lookup gradle.versions 'ktor' '2.3.7'}}"
+val kotlinxSerializationVersion = "{{lookup gradle.versions 'kotlinx_serialization' '1.6.2'}}"
+val kotlinxDatetimeVersion = "{{lookup gradle.versions 'kotlinx_datetime' '0.5.0'}}"
+
+dependencies {
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:${kotlinxDatetimeVersion}")
+}
