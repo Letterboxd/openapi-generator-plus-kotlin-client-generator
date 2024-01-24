@@ -402,6 +402,18 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			concreteType: null,
 			parentType: null,
 		}),
+		toSuggestedSchemaName: (name, options) => {
+			if (options.schemaType === CodegenSchemaType.ENUM) {
+				name = `${name}`
+			} else if (options.purpose === CodegenSchemaPurpose.EXTRACTED_INTERFACE) {
+				name = `i_${name}`
+			} else if (options.purpose === CodegenSchemaPurpose.ABSTRACT_IMPLEMENTATION) {
+				name = `abstract_${name}`
+			} else if (options.purpose === CodegenSchemaPurpose.IMPLEMENTATION) {
+				name = `${name}_impl`
+			}
+			return name
+		},
 		defaultValue: (options) => {
 			const { schemaType, required } = options
 
