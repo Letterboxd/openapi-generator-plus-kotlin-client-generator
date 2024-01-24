@@ -2,7 +2,7 @@
 openapi: '3.0.3'
 info:
   version: 1.0.1
-  title: oneOf with primitive types
+  title: Example
 paths:
   /pet/{id}:
     get:
@@ -27,13 +27,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyResponseType'
+              examples:
+                java:
+                  value: new com.example.model.Cat()
 components:
   schemas:
     MyResponseType:
       oneOf:
-      - type: number
-      - type: string
-      - type: boolean
-      - type: array
-        items:
+      - $ref: '#/components/schemas/Cat'
+      - $ref: '#/components/schemas/Dog'
+      - $ref: '#/components/schemas/Lizard'
+    Cat:
+      type: object
+      properties:
+        name:
           type: string
+    Dog:
+      type: object
+      properties:
+        name:
+          type: string
+        bark:
+          type: string
+    Lizard:
+      type: object
+      properties:
+        lovesRocks:
+          type: boolean
