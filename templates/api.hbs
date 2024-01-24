@@ -1,15 +1,14 @@
-//
-// {{name}}Api.swift
-//
-// {{>frag/generatedBy}}
-//
+/**
+ * {{>frag/generatedBy}}
+ */
 
-import Foundation
+package {{apiPackage}}
 
-open class {{name}}Api {
+open class {{name}}Api(
+    var basePath: String
+) {
 
     var configuration: Configuration
-    var basePath: String
     var cachePolicy: URLRequest.CachePolicy
     var timeoutInterval: TimeInterval
 
