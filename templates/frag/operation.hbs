@@ -10,28 +10,27 @@
 {{/join}}
 {{#join '_callParams' ', '}}
 {{#each parameters}}
-{{{name}}}: {{{name}}}
+{{{name}}} = {{{name}}}
 {{/each}}
 {{#if requestBody.nativeType}}
 {{#with requestBody}}
-{{{name}}}: {{{name}}}
+{{{name}}} = {{{name}}}
 {{/with}}
 {{/if}}
 {{/join}}
 {{#join '_requestCallParams' ', '}}
 {{#each parameters}}
-{{{name}}}: __request.{{{name}}}
+{{{name}}} = __request.{{{name}}}
 {{/each}}
 {{#if requestBody.nativeType}}
 {{#with requestBody}}
-{{{name}}}: {{{name}}}
+{{{name}}} = {{{name}}}
 {{/with}}
 {{/if}}
 {{/join}}
 {{#join '_resultClassName' ''}}
 {{className name}}Result
 {{/join}}
-
 sealed class {{{_resultClassName}}} {
 {{#each responses}}
     {{!-- {{#ifneq code 401}} --}}
@@ -71,13 +70,13 @@ private suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth
     {{!-- val __request = /* await */ {{{name}}}Request({{{_callParams}}}) --}}
     val response = client.{{{lowerCase httpMethod}}}("{{{group.path}}}{{{path}}}")
 
-    when (response.status) {
+    return when (response.status) {
     {{#each responses}}
         {{!-- {{#ifneq code 401}} --}}
         io.ktor.http.HttpStatusCode.fromValue({{{code}}}) -> {
         {{#if defaultContent.nativeType}}
             val body: {{{defaultContent.nativeType.concreteType}}} = response.body()
-            return {{../_resultClassName}}.`{{{code}}}`(body)
+            {{../_resultClassName}}.`{{{code}}}`(body)
             {{!-- do {
                 val decodedData = JSONDecoder().decode({{{defaultContent.nativeType.concreteType}}}.self, from: data)
                 return .`{{{code}}}`(decodedData)
@@ -85,7 +84,7 @@ private suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth
                 throw APIError.invalidResponse(error, response: response, data: data)
             } --}}
         {{else}}
-            return {{../_resultClassName}}.`{{{code}}}`
+            {{../_resultClassName}}.`{{{code}}}`
         {{/if}}
         }
         {{!-- {{/ifneq}} --}}
