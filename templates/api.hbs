@@ -5,10 +5,9 @@
 package {{apiPackage}}
 
 open class {{name}}Api(
-    var basePath: String
 ) {
 
-    var configuration: Configuration
+    {{!-- var configuration: Configuration
     var cachePolicy: URLRequest.CachePolicy
     var timeoutInterval: TimeInterval
 
@@ -33,7 +32,7 @@ open class {{name}}Api(
         }
         self.timeoutInterval = configuration.timeoutInterval
     }
-
+--}}
 {{#each operations}}
     {{>frag/operation group=..}}
 {{/each}}
