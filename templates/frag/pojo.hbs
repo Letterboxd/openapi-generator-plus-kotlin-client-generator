@@ -19,10 +19,13 @@ data class {{{name}}} (
     @kotlin.Deprecated(message = "This property is deprecated.")
     {{/if}}
     @kotlinx.serialization.SerialName(value = "{{{serializedName}}}")
-    {{#ifeq schema.nativeType.nativeType 'java.net.URL'}}
+    {{#ifeq schema.schemaType "ENUM"}}
+    @kotlinx.serialization.Serializable(with = {{{nativeType.concreteType}}}.Serializer::class)
+    {{/ifeq}}
+    {{#ifeq schema.nativeType.concreteType 'java.net.URL'}}
     @kotlinx.serialization.Serializable(with = com.example.kotlin.api.support.KURLSerializer::class)
     {{/ifeq}}
-    {{#ifeq schema.nativeType.nativeType 'java.util.UUID'}}
+    {{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
     @kotlinx.serialization.Serializable(with = com.example.kotlin.api.support.KUUIDSerializer::class)
     {{/ifeq}}
     {{#if overrides}}override {{/if}}val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{#if initialValue}}{{{initialValue.literalValue}}}{{else}}{{{undefinedValueLiteral schema}}}{{/if}}{{/unless}},

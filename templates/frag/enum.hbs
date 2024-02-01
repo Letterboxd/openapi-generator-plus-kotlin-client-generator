@@ -1,16 +1,29 @@
 {{>frag/schemaDocumentation}}
-@kotlinx.serialization.Serializable
 sealed interface {{{name}}} {
     val value: kotlin.String
 
-    @kotlinx.serialization.Serializable
     data class Unknown(override val value: kotlin.String): {{{name}}}
 
 {{#each enumValues}}
-    @kotlinx.serialization.Serializable
     data object {{className name}}: {{{../name}}} {
         override val value: kotlin.String = {{{literalValue}}}
     }
     
 {{/each}}
+    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
+        override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor = kotlinx.serialization.descriptors.PrimitiveSerialDescriptor("{{{nativeType.concreteType}}}Serializer", kotlinx.serialization.descriptors.PrimitiveKind.STRING)
+
+        override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: {{{name}}}) {
+            encoder.encodeString(value.value)
+        }
+
+        override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): {{{name}}} =
+            when (val value = decoder.decodeString()) {
+                {{#each enumValues}}
+                "{{{name}}}" -> {{{../name}}}.{{className name}}
+                {{/each}}
+                else -> {{{name}}}.Unknown(value)
+            }
+    }
+
 }
