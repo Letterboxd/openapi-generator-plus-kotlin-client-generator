@@ -7,14 +7,14 @@ Handle parameters when building an API request
 @param var the name of the variable containing the property
 --}}
 {{#and (not required) (ifndef _handledRequired)}}
-if let value = {{{var}}} { // required
-    {{>frag/requestParameter var='value' _handledRequired=true}}
+{{{var}}}?.let { // required
+    {{>frag/requestParameter var='it' _handledRequired=true}}
 }
 {{else}}
 {{#if (isArray)}}
 {{#and nullable (ifndef _handledNullable)}}
-if let value = {{{var}}}.value { // nullable
-    {{>frag/requestParameter var='value' _handledNullable=true}}
+{{{var}}}.value?.let { // nullable
+    {{>frag/requestParameter var='it' _handledNullable=true}}
 }
 {{else}}
 {{#ifeq encoding.style 'form'}}
