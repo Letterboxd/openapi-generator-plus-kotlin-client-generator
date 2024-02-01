@@ -28,24 +28,23 @@
 {{/with}}
 {{/if}}
 {{/join}}
-sealed class {{className name}}Result {
-{{#each responses}}
-    {{#ifneq code 401}}
+{{#join '_resultClassName' ''}}
+{{className name}}Result
+{{/join}}
 
+sealed class {{{_resultClassName}}} {
+{{#each responses}}
+    {{!-- {{#ifneq code 401}} --}}
     {{#if description}}
-    /**
-     * {{#indent '     * '}}{{{description}}}{{/indent}}
-     */
+    /** {{{description}}} */
     {{/if}}
     {{#if defaultContent.nativeType}}
-    data class _{{{code}}}(val value: {{{defaultContent.nativeType}}}): {{className ../name}}()
+    data class `{{{code}}}`(val value: {{{defaultContent.nativeType}}}): {{{../_resultClassName}}}()
     {{else}}
-    data object _{{{code}}}: {{className ../name}}()
+    data object `{{{code}}}`: {{{../_resultClassName}}}()
     {{/if}}
-    {{!-- data class _{{{code}}}{{#if defaultContent.nativeType}}(val value: {{{defaultContent.nativeType}}}){{/if}} --}}
-    {{/ifneq}}
+    {{!-- {{/ifneq}} --}}
 {{/each}}
-    
 }
 
 {{#if (gt (count parameters) 1)}}
@@ -55,8 +54,8 @@ sealed class {{className name}}Result {
 {{#if deprecated}}
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
-open suspend fun {{{name}}}(_ __request: {{{className (concat name '_' 'request')}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = nil{{/unless}}{{/if}}): {{className name}}Result {
-    return try await {{{name}}}({{{_requestCallParams}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.name}}}{{/if}})
+open suspend fun {{{name}}}(__request: {{{className (concat name '_' 'request')}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = nil{{/unless}}{{/if}}): {{className name}}Result {
+    return /* await */ {{{name}}}({{{_requestCallParams}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.name}}}{{/if}})
 }
 
 {{/if}}
@@ -65,61 +64,65 @@ open suspend fun {{{name}}}(_ __request: {{{className (concat name '_' 'request'
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
 open suspend fun {{{name}}}({{{_params}}}): {{className name}}Result {
-    return try await {{{name}}}({{{_callParams}}}{{#if _params}}, {{/if}}allowsReauth: true)
+    return /* await */ {{{name}}}({{{_callParams}}}{{#if _params}}, {{/if}}allowsReauth = true)
 }
 
-private suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: Bool): {{className name}}Result {
-    val __request = try await {{{name}}}Request({{{_callParams}}})
-    val (response, data) = try await URLSession.handleApiRequest(__request)
-    switch response.statusCode {
-{{#each responses}}
-    {{#ifneq code 401}}
-    case {{{code}}}:
-    {{#if defaultContent.nativeType}}
-        do {
-            val decodedData = try JSONDecoder().decode({{{defaultContent.nativeType.concreteType}}}.self, from: data)
-            return ._{{{code}}}(decodedData)
-        } catch {
-            throw APIError.invalidResponse(error, response: response, data: data)
+private suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: Boolean): {{className name}}Result {
+    {{!-- val __request = /* await */ {{{name}}}Request({{{_callParams}}}) --}}
+    val response = client.{{{lowerCase httpMethod}}}("{{{group.path}}}{{{path}}}")
+
+    when (response.status) {
+    {{#each responses}}
+        {{!-- {{#ifneq code 401}} --}}
+        io.ktor.http.HttpStatusCode.fromValue({{{code}}}) -> {
+        {{#if defaultContent.nativeType}}
+            val body: {{{defaultContent.nativeType.concreteType}}} = response.body()
+            return {{../_resultClassName}}.`{{{code}}}`(body)
+            {{!-- do {
+                val decodedData = JSONDecoder().decode({{{defaultContent.nativeType.concreteType}}}.self, from: data)
+                return .`{{{code}}}`(decodedData)
+            } catch {
+                throw APIError.invalidResponse(error, response: response, data: data)
+            } --}}
+        {{else}}
+            return {{../_resultClassName}}.`{{{code}}}`
+        {{/if}}
         }
-    {{else}}
-        return ._{{{code}}}
-    {{/if}}
-    {{/ifneq}}
-{{/each}}
-{{#if securityRequirements}}
-    case 401:
-        if allowsReauth, val securityClient = configuration.securityClient {
-            var didAuthenticate = false
-            var lastError: Error?
-            {{#each securityRequirements.requirements}}
-            if !didAuthenticate {
-                do {
-                    {{#each schemes}}
-                    try await securityClient.reauthenticate(failedRequest: __request, securityScheme: .{{{identifier scheme.name}}}, scopes: [{{#each scopes}}{{{stringLiteral name}}}{{#unless @last}}, {{/unless}}{{/each}}])
-                    {{/each}}
-                    didAuthenticate = true
-                } catch (val error) {
-                    lastError = error
+        {{!-- {{/ifneq}} --}}
+    {{/each}}
+    {{!-- {{#if securityRequirements}}
+        HttpStatusCode.Unauthorized -> {
+            if allowsReauth, val securityClient = configuration.securityClient {
+                var didAuthenticate = false
+                var lastError: Error?
+                {{#each securityRequirements.requirements}}
+                if !didAuthenticate {
+                    do {
+                        {{#each schemes}}
+                        /* await */ securityClient.reauthenticate(failedRequest: __request, securityScheme: .{{{identifier scheme.name}}}, scopes: [{{#each scopes}}{{{stringLiteral name}}}{{#unless @last}}, {{/unless}}{{/each}}])
+                        {{/each}}
+                        didAuthenticate = true
+                    } catch (val error) {
+                        lastError = error
+                    }
                 }
+                {{/each}}
+                {{#unless securityRequirements.optional}}
+                if !didAuthenticate {
+                    throw lastError!
+                }
+                {{/unless}}
+                return /* await */ {{{name}}}({{{_callParams}}}{{#if _callParams}}, {{/if}}allowsReauth = false)
+            } else {
+                throw APIError.authenticationFailed(response, data: data)
             }
-            {{/each}}
-            {{#unless securityRequirements.optional}}
-            if !didAuthenticate {
-                throw lastError!
-            }
-            {{/unless}}
-            return try await {{{name}}}({{{_callParams}}}{{#if _callParams}}, {{/if}}allowsReauth: false)
-        } else {
-            throw APIError.authenticationFailed(response, data: data)
         }
-{{/if}}
-    default:
-        throw APIError.unexpectedResponse(response, data: data)
+    {{/if}} --}}
+        else -> throw {{group.supportPackage}}.APIError.UnexpectedResponse(response, data)
     }
 }
 
-{{>frag/operationDocumentation}}
+{{!-- {{>frag/operationDocumentation}}
 open suspend fun {{{name}}}Request({{{_params}}}): URLRequest {
     val localVarPath = "{{{group.path}}}{{{path}}}"
     {{#each pathParams}}
@@ -127,12 +130,11 @@ open suspend fun {{{name}}}Request({{{_params}}}): URLRequest {
     {{/each}}
 
     var localVarHeaderParameter = [NameValuePair]()
-    {{!-- Avoid Swift complaining that localVarHeaderParameter should be a val --}}
     localVarHeaderParameter.removeAll()
 
     var localVarUrlComponents = URLComponents(string: "\(self.basePath)\(localVarPath)")!
     var localVarQueryParameter = [NameValuePair]()
-    if val localVarExistingQueryItems = localVarUrlComponents.queryItems {
+    localVarUrlComponents.queryItems?.let { localVarExistingQueryItems ->
         localVarQueryParameter.append(queryItems: localVarExistingQueryItems)
     }
 
@@ -165,20 +167,20 @@ open suspend fun {{{name}}}Request({{{_params}}}): URLRequest {
     {{#if required}}
     {{>frag/requestBody}}
     {{else}}
-    if val {{{name}}} = {{{name}}} {
+    {{{name}}}?.let { {{{name}}} ->
         {{>frag/requestBody}}
     }
     {{/if}}
 {{/with}}
 
 {{/if}}
-    localVarHeaderParameter.forEach { item in localVarRequest.addValue(item.value!, forHTTPHeaderField: item.name) }
+    localVarHeaderParameter.forEach { item -> localVarRequest.addValue(item.value!, forHTTPHeaderField: item.name) }
 
     {{>frag/requestSecurity}}
 
-    if val localVarFinalizeRequestBlock = self.configuration.finalizeRequestBlock {
+    self.configuration.finalizeRequestBlock?.let { localVarFinalizeRequestBlock ->
         localVarFinalizeRequestBlock(&localVarRequest)
     }
-    return localVarRequest
-}
 
+    return localVarRequest
+} --}}
