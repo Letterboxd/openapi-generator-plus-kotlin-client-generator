@@ -27,7 +27,7 @@ val kotlinxSerializationVersion = "{{lookup gradle.versions 'kotlinx_serializati
 val kotlinxDatetimeVersion = "{{lookup gradle.versions 'kotlinx_datetime' '0.5.0'}}"
 
 dependencies {
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    api("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
     implementation("io.ktor:ktor-client-auth:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
