@@ -6,18 +6,22 @@ package {{supportPackage}}
 
 /** Errors that occur while using the API */
 sealed class APIError: Exception() {
-    /** The security client is not authenticated */
+    {{!-- /** The security client is not authenticated */
     data object NotAuthenticated: APIError()
 
     /** The authentication request failed */
-    data class AuthenticationFailed(val response: HTTPURLResponse, val data: Data): APIError()
+    data class AuthenticationFailed(val response: HTTPURLResponse, val data: String): APIError()
 
     /** A response was received that could not be decoded */
-    data class InvalidResponse(val error: Error, response: HTTPURLResponse, val data: Data): APIError()
+    data class InvalidResponse(val error: Error, response: HTTPURLResponse, val data: String): APIError()
 
     /** The API requested authentication using a `SecurityScheme` that has not been configured in the `SecurityClientController` */
     data class SecuritySchemeNotConfigured(val securityScheme: SecurityScheme): APIError()
 
     /** A response was received with an undocumented status code */
-    data class UnexpectedResponse(val response: URLResponse, val data: Data): APIError()
+    data class UnexpectedResponse(
+        val status: HttpStatusCode, 
+        
+        val body: String
+    ): APIError() --}}
 }
