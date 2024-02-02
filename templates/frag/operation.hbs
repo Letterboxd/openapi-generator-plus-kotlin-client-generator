@@ -18,9 +18,12 @@
 {{/with}}
 {{/if}}
 {{/join}}
+{{#join '_requestName' ''}}
+{{{name}}}Request
+{{/join}}
 {{#join '_requestCallParams' ', '}}
 {{#each parameters}}
-{{{name}}} = __request.{{{name}}}
+{{{name}}} = {{{../_requestName}}}.{{{name}}}
 {{/each}}
 {{#if requestBody.nativeType}}
 {{#with requestBody}}
@@ -30,6 +33,9 @@
 {{/join}}
 {{#join '_resultClassName' ''}}
 {{className name}}Result
+{{/join}}
+{{#join '_fullPath' ''}}
+{{{group.path}}}{{{path}}}
 {{/join}}
 sealed class {{{_resultClassName}}} {
 {{#each responses}}
@@ -44,6 +50,8 @@ sealed class {{{_resultClassName}}} {
     {{/if}}
     {{!-- {{/ifneq}} --}}
 {{/each}}
+    /** Unexpected response from the API. */
+    data class UnexpectedResponse(val response: io.ktor.client.statement.HttpResponse): {{{_resultClassName}}}()
 }
 
 {{#if (gt (count parameters) 1)}}
@@ -53,8 +61,8 @@ sealed class {{{_resultClassName}}} {
 {{#if deprecated}}
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
-open suspend fun {{{name}}}(__request: {{{className (concat name '_' 'request')}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = nil{{/unless}}{{/if}}): {{className name}}Result {
-    return /* await */ {{{name}}}({{{_requestCallParams}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.name}}}{{/if}})
+open suspend fun {{{name}}}({{{_requestName}}}: {{{className _requestName}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = nil{{/unless}}{{/if}}): {{className name}}Result {
+    return {{{name}}}({{{_requestCallParams}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.name}}}{{/if}})
 }
 
 {{/if}}
@@ -62,13 +70,8 @@ open suspend fun {{{name}}}(__request: {{{className (concat name '_' 'request')}
 {{#if deprecated}}
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
-open suspend fun {{{name}}}({{{_params}}}): {{className name}}Result {
-    return /* await */ {{{name}}}({{{_callParams}}}{{#if _params}}, {{/if}}allowsReauth = true)
-}
-
-private suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: Boolean): {{className name}}Result {
-    {{!-- val __request = /* await */ {{{name}}}Request({{{_callParams}}}) --}}
-    val response = client.{{{lowerCase httpMethod}}}("{{{group.path}}}{{{path}}}")
+open suspend fun {{{name}}}({{{_params}}}{{!-- {{#if _params}}, {{/if}}allowsReauth: Boolean --}}): {{className name}}Result {
+    val response = client.{{{lowerCase httpMethod}}}("{{{stripLeadingSlash _fullPath}}}")
 
     return when (response.status) {
     {{#each responses}}
@@ -98,7 +101,7 @@ private suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth
                 if !didAuthenticate {
                     do {
                         {{#each schemes}}
-                        /* await */ securityClient.reauthenticate(failedRequest: __request, securityScheme: .{{{identifier scheme.name}}}, scopes: [{{#each scopes}}{{{stringLiteral name}}}{{#unless @last}}, {{/unless}}{{/each}}])
+                        securityClient.reauthenticate(failedRequest: __request, securityScheme: .{{{identifier scheme.name}}}, scopes: [{{#each scopes}}{{{stringLiteral name}}}{{#unless @last}}, {{/unless}}{{/each}}])
                         {{/each}}
                         didAuthenticate = true
                     } catch (val error) {
@@ -111,13 +114,13 @@ private suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth
                     throw lastError!
                 }
                 {{/unless}}
-                return /* await */ {{{name}}}({{{_callParams}}}{{#if _callParams}}, {{/if}}allowsReauth = false)
+                return {{{name}}}({{{_callParams}}}{{#if _callParams}}, {{/if}}allowsReauth = false)
             } else {
                 throw APIError.authenticationFailed(response, data: data)
             }
         }
     {{/if}} --}}
-        else -> throw {{group.supportPackage}}.APIError.UnexpectedResponse(response, data)
+        else -> {{_resultClassName}}.UnexpectedResponse(response)
     }
 }
 
