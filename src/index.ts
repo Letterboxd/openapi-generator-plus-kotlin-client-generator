@@ -561,6 +561,14 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 
 			registerStandardHelpers(hbs, context)
 
+			hbs.registerHelper('stripLeadingSlash', function(text) {
+				if (text.startsWith('/')) {
+					return text.substring(1, text.length)
+				} else {
+					return text
+				}
+			})
+
 			await loadTemplates(path.resolve(__dirname, '..', 'templates'), hbs)
 			if (context.loadAdditionalTemplates) {
 				await context.loadAdditionalTemplates(hbs)
