@@ -2,11 +2,14 @@
 sealed interface {{{name}}} {
     val value: kotlin.String
 
-    data class Unknown(override val value: kotlin.String): {{{name}}}
+    data class Unknown(override val value: kotlin.String): {{{name}}} {
+        override fun toString(): String = value
+    }
 
 {{#each enumValues}}
     data object {{className name}}: {{{../name}}} {
         override val value: kotlin.String = {{{literalValue}}}
+        override fun toString(): String = value
     }
     
 {{/each}}
