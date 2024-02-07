@@ -8,7 +8,7 @@ sealed interface {{{name}}} {
 
 {{#each enumValues}}
     data object {{className name}}: {{{../name}}} {
-        override val value: kotlin.String = {{{literalValue}}}
+        override val value: kotlin.String = "{{{value}}}"
         override fun toString(): String = value
     }
     
@@ -23,7 +23,7 @@ sealed interface {{{name}}} {
         override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): {{{name}}} =
             when (val value = decoder.decodeString()) {
                 {{#each enumValues}}
-                "{{{name}}}" -> {{{../name}}}.{{className name}}
+                "{{{value}}}" -> {{{../name}}}.{{className name}}
                 {{/each}}
                 else -> {{{name}}}.Unknown(value)
             }
