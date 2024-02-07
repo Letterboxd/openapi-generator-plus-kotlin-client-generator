@@ -71,7 +71,31 @@ open suspend fun {{{name}}}({{{_requestName}}}: {{{className _requestName}}}{{#i
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
 open suspend fun {{{name}}}({{{_params}}}{{!-- {{#if _params}}, {{/if}}allowsReauth: Boolean --}}): {{className name}}Result {
-    val response = client.{{{lowerCase httpMethod}}}("{{{stripLeadingSlash _fullPath}}}")
+    val response = client.{{{lowerCase httpMethod}}}("{{{stripLeadingSlash _fullPath}}}"){{#if _params}} {
+        url {
+            {{#each parameters}}
+            {{#ifeq schema.schemaType "ARRAY"}}
+            {{{name}}}{{#unless required}}?{{/unless}}.forEach { parameters.append("{{{name}}}", "$it") }
+            {{else}}
+            {{#if required}}
+            parameters.append("{{{name}}}", "${{{name}}}")
+            {{else}}
+            {{{name}}}?.let { parameters.append("{{{name}}}", "$it") }
+            {{/if}}
+            {{/ifeq}}
+            {{/each}}
+            {{#if requestBody.nativeType}}
+            {{#with requestBody}}
+            {{#if required}}
+            parameters.append("{{{name}}}", "${{{name}}}")
+            {{else}}
+            {{{name}}}?.let { parameters.append("{{{name}}}", "$it") }
+            {{/if}}
+            {{/with}}
+            {{/if}}
+        }
+    }
+    {{/if}}
 
     return when (response.status) {
     {{#each responses}}
