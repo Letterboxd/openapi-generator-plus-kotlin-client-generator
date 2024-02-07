@@ -1,8 +1,6 @@
-data class {{{className (concat name '_' 'request')}}}(
+data class {{{queryParamsClassName}}}(
 {{#each parameters}}
-
     {{>frag/propertyDocumentation}}
     val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{{undefinedValueLiteral schema}}}{{/unless}},
 {{/each}}
-
 )
