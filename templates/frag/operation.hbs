@@ -4,7 +4,7 @@
 {{/each}}
 {{#if requestBody.nativeType}}
 {{#with requestBody}}
-{{{name}}}: {{{nativeType}}}{{#unless required}} = null{{/unless}}
+requestBody: {{{nativeType}}}{{#unless required}} = null{{/unless}}
 {{/with}}
 {{/if}}
 {{/join}}
@@ -23,11 +23,11 @@
 {{/join}}
 {{#join '_requestCallParams' ', '}}
 {{#each parameters}}
-{{{name}}} = {{{../_requestName}}}.{{{name}}}
+{{{name}}} = queryParams.{{{name}}}
 {{/each}}
 {{#if requestBody.nativeType}}
 {{#with requestBody}}
-{{{name}}} = {{{name}}}
+requestBody = requestBody
 {{/with}}
 {{/if}}
 {{/join}}
@@ -61,8 +61,11 @@ sealed class {{{_resultClassName}}} {
 {{#if deprecated}}
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
-open suspend fun {{{name}}}({{{_requestName}}}: {{{className _requestName}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = nil{{/unless}}{{/if}}): {{className name}}Result {
-    return {{{name}}}({{{_requestCallParams}}}{{#if requestBody.nativeType}}, {{{requestBody.name}}}: {{{requestBody.name}}}{{/if}})
+{{#if requestBody.nativeType}}
+{{log .}}
+{{/if}}
+open suspend fun {{{name}}}(queryParams: {{{className _requestName}}}{{#if requestBody.nativeType}}, requestBody: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = nil{{/unless}}{{/if}}): {{className name}}Result {
+    return {{{name}}}({{{_requestCallParams}}})
 }
 
 {{/if}}
@@ -70,8 +73,9 @@ open suspend fun {{{name}}}({{{_requestName}}}: {{{className _requestName}}}{{#i
 {{#if deprecated}}
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
-open suspend fun {{{name}}}({{{_params}}}{{!-- {{#if _params}}, {{/if}}allowsReauth: Boolean --}}): {{className name}}Result {
+open suspend fun {{{name}}}({{{_params}}}): {{className name}}Result {
     val response = client.{{{lowerCase httpMethod}}}("{{{stripLeadingSlash _fullPath}}}"){{#if _params}} {
+        {{#if parameters}}
         url {
             {{#each parameters}}
             {{#ifeq schema.schemaType "ARRAY"}}
@@ -84,16 +88,14 @@ open suspend fun {{{name}}}({{{_params}}}{{!-- {{#if _params}}, {{/if}}allowsRea
             {{/if}}
             {{/ifeq}}
             {{/each}}
-            {{#if requestBody.nativeType}}
-            {{#with requestBody}}
-            {{#if required}}
-            parameters.append("{{{name}}}", "${{{name}}}")
-            {{else}}
-            {{{name}}}?.let { parameters.append("{{{name}}}", "$it") }
-            {{/if}}
-            {{/with}}
-            {{/if}}
         }
+        {{/if}}
+        {{#if requestBody.nativeType}}
+        {{#with requestBody}}
+        contentType(ContentType.parse("{{{defaultContent.mediaType.mimeType}}}"))
+        setBody(requestBody)
+        {{/with}}
+        {{/if}}
     }
     {{/if}}
 
