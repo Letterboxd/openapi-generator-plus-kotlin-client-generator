@@ -74,10 +74,16 @@ open suspend fun {{{name}}}(queryParams: {{{className _requestName}}}{{#if reque
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
 open suspend fun {{{name}}}({{{_params}}}): {{className name}}Result {
-    val response = client.{{{lowerCase httpMethod}}}("{{{stripLeadingSlash _fullPath}}}"){{#if _params}} {
-        {{#if parameters}}
+    val path = "{{{stripLeadingSlash _fullPath}}}"
+    {{#if pathParams}}
+    {{#each pathParams}}
+        .replace("{{safe '{'}}{{{serializedName}}}{{safe '}'}}", "${{identifier name}}")
+    {{/each}}
+    {{/if}}
+    val response = client.{{{lowerCase httpMethod}}}(path){{#if _params}} {
+        {{#if queryParams}}
         url {
-            {{#each parameters}}
+            {{#each queryParams}}
             {{#ifeq schema.schemaType "ARRAY"}}
             {{{name}}}{{#unless required}}?{{/unless}}.forEach { parameters.append("{{{name}}}", "$it") }
             {{else}}
