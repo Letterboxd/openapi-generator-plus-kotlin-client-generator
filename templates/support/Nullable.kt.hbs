@@ -7,13 +7,24 @@ package {{supportPackage}}
 /**
  * Contains a value that may be explicitly set to `null` when sent via the API.
  */
-@kotlinx.serialization.Serializable
-sealed interface Nullable<out T> {
+sealed class Nullable<out T> {
+    data class Some<T>(val value: T): Nullable<T>()
+    data object Null: Nullable<Nothing>()
 
-    @kotlinx.serialization.Serializable
-    data class Some<T>(val value: T): Nullable<T>
-    
-    @kotlinx.serialization.Serializable
-    data object Null: Nullable<Nothing>
+    open class Serializer<T>(
+        private val valueSerializer: kotlinx.serialization.KSerializer<T>
+    ) : kotlinx.serialization.KSerializer<Nullable<T>> {
+        final override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor = valueSerializer.descriptor
 
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        final override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: Nullable<T>) {
+            when (value) {
+                Nullable.Null -> encoder.encodeNull()
+                is Nullable.Some -> valueSerializer.serialize(encoder, value.value)
+            }
+        }
+
+        final override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): Nullable<T> =
+            Nullable.Some(valueSerializer.deserialize(decoder))
+    }
 }
