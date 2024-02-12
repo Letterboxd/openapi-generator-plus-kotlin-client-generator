@@ -7,6 +7,7 @@ export interface CodegenOptionsKotlin extends JavaLikeOptions {
 	apiPackage: string
 	modelPackage: string
 	supportPackage: string
+	securityPackage: string
 
 	relativeSourceOutputPath: string
 	customTemplatesPath: string | null

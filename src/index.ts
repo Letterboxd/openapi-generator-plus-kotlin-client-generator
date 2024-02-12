@@ -110,6 +110,7 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		apiPackage,
 		modelPackage: configString(config, 'modelPackage', `${packageName}.model`),
 		supportPackage: configString(config, 'supportPackage', `${packageName}.support`),
+		securityPackage: configString(config, 'securityPackage', `${packageName}.security`),
 		customTemplatesPath: customTemplates ? computeCustomTemplatesPath(config.configPath, customTemplates) : null,
 		hideGenerationTimestamp: configBoolean(config, 'hideGenerationTimestamp', false),
 
@@ -617,13 +618,21 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			if (gradle) {
 				await emit('build.gradle.kts', path.join(outputPath, 'build.gradle.kts'), { ...rootContext, ...gradle }, false, hbs)
 			}
-
+			
+			/* Support */
 			const supportPackagePath = packageToPath(generatorOptions.supportPackage)
-			const files = await fs.readdir(path.resolve(__dirname, '..', 'templates', 'support'))
-			for (const file of files) {
+			for (const file of await fs.readdir(path.resolve(__dirname, '..', 'templates', 'support'))) {
 				const fileBase = path.basename(file, path.extname(file))
 				await emit(`support/${fileBase}`, path.join(outputPath, relativeSourceOutputPath, supportPackagePath, fileBase),
 					{ ...rootContext }, true, hbs)
+			}
+
+			/* Security */
+			const securityPackagePath = packageToPath(generatorOptions.securityPackage)
+			for (const file of await fs.readdir(path.resolve(__dirname, '..', 'templates', 'security'))) {
+				const fileBase = path.basename(file, path.extname(file))
+				await emit(`security/${fileBase}`, path.join(outputPath, relativeSourceOutputPath, securityPackagePath, fileBase),
+					{ ...rootContext, securitySchemes: doc.securitySchemes }, true, hbs)
 			}
 	
 			if (context.additionalExportTemplates) {
@@ -663,7 +672,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			}
 
 			/**
-			 * Because in Swift we use a protocol for allOf, 
+			 * Because in Kotlin we use an interface for allOf, 
 			 * we can't comply if the required status mismatches at all, 
 			 * for the same reason as nullability above.
 			 */
