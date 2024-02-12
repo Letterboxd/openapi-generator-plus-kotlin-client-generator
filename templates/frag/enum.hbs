@@ -15,7 +15,7 @@ sealed interface {{{name}}} {
 {{/each}}
     class NullableSerializer(
         serializer: kotlinx.serialization.KSerializer<{{{name}}}>
-    ) : {{supportPackage}}.Nullable.Serializer<{{{name}}}>(serializer)
+    ) : {{{supportPackage}}}.Nullable.Serializer<{{{name}}}>(serializer)
 
     object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
         override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor = kotlinx.serialization.descriptors.PrimitiveSerialDescriptor("{{{nativeType.concreteType}}}Serializer", kotlinx.serialization.descriptors.PrimitiveKind.STRING)

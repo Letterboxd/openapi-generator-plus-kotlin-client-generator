@@ -20,16 +20,16 @@ data class {{{name}}} (
     {{/if}}
     @kotlinx.serialization.SerialName(value = "{{{serializedName}}}")
     {{#ifeq schema.nativeType.concreteType 'java.net.URL'}}
-    @kotlinx.serialization.Serializable(with = {{{supportPackage}}}.KURLSerializer::class)
+    @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.KURLSerializer::class)
     {{/ifeq}}
     {{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
-    @kotlinx.serialization.Serializable(with = {{{supportPackage}}}.KUUIDSerializer::class)
+    @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.KUUIDSerializer::class)
     {{/ifeq}}
     {{#if nullable}}
     {{#ifeq schema.schemaType "ENUM"}}
     @kotlinx.serialization.Serializable(with = {{{nativeType.concreteType}}}.NullableSerializer::class)
     {{else}}
-    @kotlinx.serialization.Serializable(with = {{{supportPackage}}}.Nullable.Serializer::class)
+    @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.Nullable.Serializer::class)
     {{/ifeq}}
     {{else}}
     {{#ifeq schema.schemaType "ENUM"}}

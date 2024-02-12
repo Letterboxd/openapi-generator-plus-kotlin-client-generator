@@ -62,7 +62,6 @@ sealed class {{{_resultClassName}}} {
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
 {{#if requestBody.nativeType}}
-{{log .}}
 {{/if}}
 open suspend fun {{{name}}}(queryParams: {{{className _requestName}}}{{#if requestBody.nativeType}}, requestBody: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = nil{{/unless}}{{/if}}): {{className name}}Result {
     return {{{name}}}({{{_requestCallParams}}})
