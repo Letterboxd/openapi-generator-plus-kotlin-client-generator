@@ -1,0 +1,29 @@
+/*
+ * {{>frag/generatedBy}}
+ */
+
+package {{securityPackage}}
+
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.headers
+import io.ktor.util.encodeBase64
+
+/** A [SecurityClient] responsible for handling Basic authentication credentials. */
+class BasicAuthenticationSecurityClient(
+    private val username: String, private val password: String
+) : SecurityClient {
+    override suspend fun reauthenticate(
+        failedRequest: HttpRequest, securityScheme: SecurityScheme, scopes: List<String>?
+    ) {
+        // Do nothing.
+    }
+
+    override suspend fun authorize(
+        request: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ) {
+        request.headers {
+            append("Authorization", "$username:$password".encodeBase64())
+        }
+    }
+}

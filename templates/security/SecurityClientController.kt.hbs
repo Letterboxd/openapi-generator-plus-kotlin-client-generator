@@ -1,0 +1,41 @@
+/*
+ * {{>frag/generatedBy}}
+ */
+
+package {{securityPackage}}
+
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
+
+/**
+Delegates security requirements to the appropriate SecurityClient.
+This controller serves as the default intended security client for any API configuration and can be safely shared by multiple API instances.
+
+Note: Specific [SecurityClient] objects can be inserted or replaced dynamically to accommodate user behavior changes, such as signing in or signing out.
+ */
+class SecurityClientController(
+    private val clients: MutableMap<SecurityScheme, SecurityClient> = mutableMapOf()
+) : SecurityClient {
+
+    fun setClient(securityScheme: SecurityScheme, client: SecurityClient) {
+        clients[securityScheme] = client
+    }
+
+    fun getClient(securityScheme: SecurityScheme): SecurityClient? {
+        return clients[securityScheme]
+    }
+
+    override suspend fun reauthenticate(
+        failedRequest: HttpRequest, securityScheme: SecurityScheme, scopes: List<String>?
+    ) {
+        clients[securityScheme]?.reauthenticate(failedRequest, securityScheme, scopes)
+            ?: error("securitySchemeNotConfigured")
+    }
+
+    override suspend fun authorize(
+        request: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ) {
+        clients[securityScheme]?.authorize(request, securityScheme, scopes)
+            ?: error("securitySchemeNotConfigured")
+    }
+}

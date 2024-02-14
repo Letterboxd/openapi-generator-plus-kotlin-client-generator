@@ -1,0 +1,60 @@
+/*
+ * {{>frag/generatedBy}}
+ */
+
+package {{securityPackage}}
+
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
+import java.net.URL
+import kotlin.time.Duration
+
+open class AbstractOAuthFlowClient(
+    val clientId: String,
+    val clientSecret: String,
+    refreshURL: URL?,
+    autoRefreshInterval: Duration? = null,
+    accessTokenDidChange: AccessTokenHandler?
+) : SecurityClient {
+    protected val tokenManager: OAuthAccessTokenManager
+
+    var revocationURL: URL? = null
+
+    init {
+        tokenManager = OAuthAccessTokenManager(
+            clientId, clientSecret, refreshURL, autoRefreshInterval, accessTokenDidChange
+        )
+    }
+
+    suspend fun refreshToken(): String? = tokenManager.getAccessToken()?.refreshToken
+
+    suspend fun accessToken(): OAuthAccessToken? = tokenManager.getAccessToken()
+
+    /// Authenticate the security client using a refresh token.
+//    suspend fun authenticate(refreshToken: String) {
+//        tokenManager.setAccessToken(OAuthAccessToken(refreshToken: refreshToken))
+//        tokenManager.refreshToken()
+//    }
+
+    override suspend fun reauthenticate(
+        failedRequest: HttpRequest, securityScheme: SecurityScheme, scopes: List<String>?
+    ) {
+        tokenManager.refreshToken(failedRequest)
+    }
+
+    override suspend fun authorize(
+        request: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ) {
+        tokenManager.authorize(request)
+    }
+
+    suspend fun revokeRefreshToken() {
+        val revocationURL = revocationURL ?: return
+        tokenManager.revokeRefreshToken(revocationURL)
+    }
+
+    suspend fun revokeAccessToken() {
+        val revocationURL = revocationURL ?: return
+        tokenManager.revokeAccessToken(revocationURL)
+    }
+}

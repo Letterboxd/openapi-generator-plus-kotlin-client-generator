@@ -1,0 +1,51 @@
+/*
+ * {{>frag/generatedBy}}
+ */
+
+package {{securityPackage}}
+
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.cookie
+import io.ktor.client.request.headers
+
+/**
+ * A `SecurityClient` responsible for handling API Key authentication credentials.
+ *
+ * @property apiKey A string representing the username for authentication.
+ * @property mode A setting to configure the location of the API Key in the request.
+ * @property paramName The name of the parameter which will appear as the header or query name
+ */
+class APIKeySecurityClient(
+    private val apiKey: String,
+    private val mode: Mode,
+    private val paramName: String,
+) : SecurityClient {
+    enum class Mode {
+        HEADER, QUERY, COOKIE
+    }
+
+    override suspend fun reauthenticate(
+        failedRequest: HttpRequest,
+        securityScheme: SecurityScheme,
+        scopes: List<String>?
+    ) {
+        // Do nothing.
+    }
+
+    override suspend fun authorize(
+        request: HttpRequestBuilder,
+        securityScheme: SecurityScheme,
+        scopes: List<String>?
+    ) {
+        when (mode) {
+            Mode.HEADER -> request.headers {
+                append(paramName, apiKey)
+            }
+            Mode.QUERY -> request.url {
+                parameters.append(paramName, apiKey)
+            }
+            Mode.COOKIE -> request.cookie(paramName, apiKey)
+        }
+    }
+}

@@ -1,0 +1,33 @@
+/*
+ * {{>frag/generatedBy}}
+ */
+
+package {{securityPackage}}
+
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
+
+/** A protocol defining methods for handling security within API requests. */
+interface SecurityClient {
+    /**
+     * Handles reauthentication when an API request receives a 401 response.
+     *
+     * Note: If no errors are thrown, the session will be reauthenticated and new requests should be attempted.
+     *
+     * @param failedRequest The URLRequest that received an authentication failure response.
+     * @param securityScheme The security scheme to be reauthenticated.
+     * @param scopes Optional scopes associated with the reauthentication.
+     * @throws Exception An error if the reauthentication process encounters an issue.
+     */
+    suspend fun reauthenticate(failedRequest: HttpRequest, securityScheme: SecurityScheme, scopes: List<String>?)
+
+    /**
+     * Modify the request to authorise it for the required SecurityScheme and scopes.
+     *
+     * @param request The original URLRequest to be authorized.
+     * @param securityScheme The security scheme to be used for authorization.
+     * @param scopes Optional scopes associated with the authorization.
+     * @throws Error An error if the authorization process encounters an issue.
+     */
+    suspend fun authorize(request: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?)
+}

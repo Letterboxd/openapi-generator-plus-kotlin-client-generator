@@ -14,7 +14,7 @@ enum class SecurityScheme(val rawValue: String) {
 {{/each}}
 {{else}}
     /** No security schemes were specified. This case is a placeholder so the sealed class is valid. */
-    UNSPECIFIED("unspecified")
+    UNSPECIFIED("unspecified");
 {{/if}}
 
     val debugDescription: String
@@ -28,42 +28,79 @@ enum class SecurityScheme(val rawValue: String) {
 {{#ifeq type 'password'}}
 /**
  * Create an instance of `OAuthPasswordFlowClient` with provided authentication credentials, using endpoint URLs from the API specification.
- * 
+ *
  * @param clientId: The client ID associated with the API.
  * @param clientSecret: The client secret associated with the API.
- * @param preemptiveAccessTokenRefresh: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
- * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `nil`.
+ * @param autoRefreshInterval: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
+ * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `null`.
  */
-fun OAuthPasswordFlowClient.{{identifier ../name}}Client(clientId: String, clientSecret: String, preemptiveAccessTokenRefresh: TimeInterval? = null, accessTokenDidChange: AccessTokenHandler? = null): OAuthPasswordFlowClient {
-    OAuthPasswordFlowClient(clientId: clientId, clientSecret: clientSecret{{#if refreshUrl}}, refreshURL: URL(string: "{{{refreshUrl}}}"){{/if}}, preemptiveAccessTokenRefresh: preemptiveAccessTokenRefresh, tokenURL: URL(string: "{{{tokenUrl}}}")!, accessTokenDidChange: accessTokenDidChange)
-}
+fun OAuthPasswordFlowClient.{{identifier ../name}}Client(
+    clientId: String,
+    clientSecret: String,
+    autoRefreshInterval: kotlin.time.Duration? = null,
+    accessTokenDidChange: AccessTokenHandler? = null
+): OAuthPasswordFlowClient = OAuthPasswordFlowClient(
+    clientId = clientId,
+    clientSecret = clientSecret,
+{{#if refreshUrl}}
+    refreshURL = java.net.URL("{{{refreshUrl}}}"),
+{{/if}}
+    tokenURL = java.net.URL("{{{tokenUrl}}}"),
+    autoRefreshInterval = autoRefreshInterval,
+    accessTokenDidChange = accessTokenDidChange
+)
 {{/ifeq}}
 {{#ifeq type 'clientCredentials'}}
 /**
  * Create an instance of `OAuthClientCredentialsFlowClient` with provided authentication credentials, using endpoint URLs from the API specification.
- * 
+ *
  * @param clientId: The client ID associated with the API.
  * @param clientSecret: The client secret associated with the API.
- * @param preemptiveAccessTokenRefresh: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
- * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `nil`.
+ * @param autoRefreshInterval: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
+ * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `null`.
  */
-fun OAuthClientCredentialsFlowClient.{{identifier ../name}}Client(clientId: String, clientSecret: String, preemptiveAccessTokenRefresh: TimeInterval? = null, accessTokenDidChange: AccessTokenHandler? = null): OAuthClientCredentialsFlowClient {
-    OAuthClientCredentialsFlowClient(clientId: clientId, clientSecret: clientSecret{{#if refreshUrl}}, refreshURL: URL(string: "{{{refreshUrl}}}"){{/if}}, preemptiveAccessTokenRefresh: preemptiveAccessTokenRefresh, tokenURL: URL(string: "{{{tokenUrl}}}")!, accessTokenDidChange: accessTokenDidChange)
-}
+fun OAuthClientCredentialsFlowClient.{{identifier ../name}}Client(
+    clientId: String,
+    clientSecret: String,
+    autoRefreshInterval: kotlin.time.Duration? = null,
+    accessTokenDidChange: AccessTokenHandler? = null
+): OAuthClientCredentialsFlowClient = OAuthClientCredentialsFlowClient(
+    clientId = clientId,
+    clientSecret = clientSecret,
+{{#if refreshUrl}}
+    refreshURL = java.net.URL("{{{refreshUrl}}}"),
+{{/if}}
+    tokenURL = java.net.URL("{{{tokenUrl}}}"),
+    autoRefreshInterval = autoRefreshInterval,
+    accessTokenDidChange = accessTokenDidChange
+)
 {{/ifeq}}
 {{#ifeq type 'authorizationCode'}}
 {{#if authorizationUrl}}
 /**
  * Create an instance of `OAuthAuthorizationCodeFlowClient` with provided authentication credentials, using endpoint URLs from the API specification.
- * 
+ *
  * @param clientId: The client ID associated with the API.
  * @param clientSecret: The client secret associated with the API.
- * @param preemptiveAccessTokenRefresh: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
- * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `nil`.
+ * @param autoRefreshInterval: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
+ * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `null`.
  */
-fun OAuthAuthorizationCodeFlowClient.{{identifier ../name}}Client(clientId: String, clientSecret: String, preemptiveAccessTokenRefresh: TimeInterval? = null, accessTokenDidChange: AccessTokenHandler? = null): OAuthAuthorizationCodeFlowClient {
-    OAuthAuthorizationCodeFlowClient(clientId: clientId, clientSecret: clientSecret{{#if refreshUrl}}, refreshURL: URL(string: "{{{refreshUrl}}}"){{/if}}, preemptiveAccessTokenRefresh: preemptiveAccessTokenRefresh, tokenURL: URL(string: "{{{tokenUrl}}}")!, authorizationURL: URL(string: "{{{authorizationUrl}}}")!, accessTokenDidChange: accessTokenDidChange)
-}
+fun OAuthAuthorizationCodeFlowClient.{{identifier ../name}}Client(
+    clientId: String,
+    clientSecret: String,
+    autoRefreshInterval: kotlin.time.Duration? = null,
+    accessTokenDidChange: AccessTokenHandler? = null
+): OAuthAuthorizationCodeFlowClient = OAuthAuthorizationCodeFlowClient(
+    clientId = clientId,
+    clientSecret = clientSecret,
+{{#if refreshUrl}}
+    refreshURL = java.net.URL("{{{refreshUrl}}}"),
+{{/if}}
+    tokenURL = java.net.URL("{{{tokenUrl}}}"),
+    authorizationURL = java.net.URL("{{{authorizationUrl}}}"),
+    autoRefreshInterval = autoRefreshInterval,
+    accessTokenDidChange = accessTokenDidChange
+)
 {{/if}}
 {{/ifeq}}
 {{#ifeq type 'implicit'}}
