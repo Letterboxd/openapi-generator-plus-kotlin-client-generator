@@ -25,18 +25,6 @@ data class {{{name}}} (
     {{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
     @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.KUUIDSerializer::class)
     {{/ifeq}}
-    {{#if nullable}}
-    {{#ifeq schema.schemaType "ENUM"}}
-    @kotlinx.serialization.Serializable(with = {{{nativeType.concreteType}}}.NullableSerializer::class)
-    {{else}}
-    @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.Nullable.Serializer::class)
-    {{/ifeq}}
-    {{else}}
-    {{#ifeq schema.schemaType "ENUM"}}
-    @kotlinx.serialization.Serializable(with = {{{nativeType.concreteType}}}.Serializer::class)
-    {{/ifeq}}
-    {{/if}}
-    {{#if overrides}}override {{/if}}val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{#if initialValue}}{{{initialValue.literalValue}}}{{else}}{{{undefinedValueLiteral schema}}}{{/if}}{{/unless}},
 
 {{/each}}
 ){{#if _parents}}: {{{_parents}}}{{/if}}{{#if schemas}} {

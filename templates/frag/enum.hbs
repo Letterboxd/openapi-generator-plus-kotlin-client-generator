@@ -1,4 +1,5 @@
 {{>frag/schemaDocumentation}}
+@kotlinx.serialization.Serializable(with = {{{name}}}.Serializer::class)
 sealed interface {{{name}}} {
     val value: kotlin.String
 

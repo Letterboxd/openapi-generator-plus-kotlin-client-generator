@@ -7,6 +7,7 @@ package {{supportPackage}}
 /**
  * Contains a value that may be explicitly set to `null` when sent via the API.
  */
+@kotlinx.serialization.Serializable(with = Nullable.Serializer::class)
 sealed class Nullable<out T> {
     data class Some<T>(val value: T): Nullable<T>()
     data object Null: Nullable<Nothing>()
