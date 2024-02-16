@@ -3,25 +3,28 @@
 sealed interface {{{name}}} {
     val value: kotlin.String
 
-    data class Unknown(override val value: kotlin.String): {{{name}}} {
+    data class Unknown(override val value: kotlin.String) : {{{name}}} {
         override fun toString(): String = value
     }
 
 {{#each enumValues}}
-    data object {{className name}}: {{{../name}}} {
+    data object {{className name}} : {{{../name}}} {
         override val value: kotlin.String = "{{{value}}}"
         override fun toString(): String = value
     }
     
 {{/each}}
-    class NullableSerializer(
-        serializer: kotlinx.serialization.KSerializer<{{{name}}}>
-    ) : {{{supportPackage}}}.Nullable.Serializer<{{{name}}}>(serializer)
-
     object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
-        override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor = kotlinx.serialization.descriptors.PrimitiveSerialDescriptor("{{{nativeType.concreteType}}}Serializer", kotlinx.serialization.descriptors.PrimitiveKind.STRING)
+        override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
+            kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
+                "{{{nativeType.concreteType}}}Serializer",
+                kotlinx.serialization.descriptors.PrimitiveKind.STRING
+            )
 
-        override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: {{{name}}}) {
+        override fun serialize(
+            encoder: kotlinx.serialization.encoding.Encoder, 
+            value: {{{name}}}
+        ) {
             encoder.encodeString(value.value)
         }
 

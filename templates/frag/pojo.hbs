@@ -11,7 +11,7 @@
 {{/each}}
 {{/join}}
 @kotlinx.serialization.Serializable
-data class {{{name}}} (
+data class {{{name}}}(
     
 {{#each properties}}
     {{>frag/propertyDocumentation}}
@@ -25,9 +25,10 @@ data class {{{name}}} (
     {{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
     @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.KUUIDSerializer::class)
     {{/ifeq}}
+    {{#if overrides}}override {{/if}}val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{#if initialValue}}{{{initialValue.literalValue}}}{{else}}{{{undefinedValueLiteral schema}}}{{/if}}{{/unless}}{{#unless @last}},{{/unless}}
 
 {{/each}}
-){{#if _parents}}: {{{_parents}}}{{/if}}{{#if schemas}} {
+){{#if _parents}} : {{{_parents}}}{{/if}}{{#if schemas}} {
 
     {{>frag/nestedSchemas}}
 }{{/if}}
