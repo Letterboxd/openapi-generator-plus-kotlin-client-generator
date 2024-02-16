@@ -34,7 +34,7 @@ enum class SecurityScheme(val rawValue: String) {
  * @param autoRefreshInterval: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
  * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `null`.
  */
-fun OAuthPasswordFlowClient.{{identifier ../name}}Client(
+fun OAuthPasswordFlowClient.Companion.{{identifier ../name}}Client(
     clientId: String,
     clientSecret: String,
     autoRefreshInterval: kotlin.time.Duration? = null,
@@ -59,7 +59,7 @@ fun OAuthPasswordFlowClient.{{identifier ../name}}Client(
  * @param autoRefreshInterval: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
  * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `null`.
  */
-fun OAuthClientCredentialsFlowClient.{{identifier ../name}}Client(
+fun OAuthClientCredentialsFlowClient.Companion.{{identifier ../name}}Client(
     clientId: String,
     clientSecret: String,
     autoRefreshInterval: kotlin.time.Duration? = null,
@@ -85,7 +85,7 @@ fun OAuthClientCredentialsFlowClient.{{identifier ../name}}Client(
  * @param autoRefreshInterval: Optional time interval defining how many seconds before expiration should an automatic refresh be attempted. By default no refresh is attempted until the API rejects the token.
  * @param accessTokenDidChange: A closure to be executed when the access token changes. Defaults to `null`.
  */
-fun OAuthAuthorizationCodeFlowClient.{{identifier ../name}}Client(
+fun OAuthAuthorizationCodeFlowClient.Companion.{{identifier ../name}}Client(
     clientId: String,
     clientSecret: String,
     autoRefreshInterval: kotlin.time.Duration? = null,
