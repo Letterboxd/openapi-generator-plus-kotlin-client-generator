@@ -6,6 +6,7 @@ src
 CHANGELOG.md
 tsconfig.*
 /.changeset
+/.github
 /__tests__
 /jest.config.js
 /pnpm-lock.yaml
