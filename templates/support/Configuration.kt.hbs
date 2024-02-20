@@ -4,20 +4,44 @@
 
 package {{supportPackage}}
 
-{{!-- typealias ConfigurationFinalizeRequestBlock = (request: URLRequest) -> Unit
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
+import kotlin.time.Duration
+
+typealias ConfigurationFinalizeRequestBlock = (HttpRequestBuilder) -> Unit
 
 data class Configuration(
+    /** Override the default base path. */
+    val basePath: String? = null,
 
     /** The handler for all security requests. */
-    val cachePolicy: URLRequest.CachePolicy? = nil,
+    var securityClient: com.example.kotlin.api.security.SecurityClient? = null,
 
-    /** Override the default base path. */
-    val timeoutInterval: TimeInterval = 30,
-    
-    val responseQueue: DispatchQueue? = nil,
-    
-    val securityClient: SecurityClient? = nil,
-    
-    val finalizeRequestBlock: ConfigurationFinalizeRequestBlock? = nil
+//    val cachePolicy: URLRequest.CachePolicy? = null,
 
-) --}}
+    val timeoutInterval: kotlin.time.Duration = Duration.parse("30s"),
+
+//    val responseQueue: DispatchQueue? = null,
+
+    val finalizeRequestBlock: ConfigurationFinalizeRequestBlock? = null
+
+) {
+    internal val client: HttpClient = HttpClient(OkHttp) {
+        basePath?.let {
+            defaultRequest {
+                url(it)
+            }
+        }
+
+        install(ContentNegotiation) {
+            json(Json {
+                encodeDefaults = false
+            })
+        }
+    }
+}

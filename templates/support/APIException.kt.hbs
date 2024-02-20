@@ -1,0 +1,23 @@
+/* 
+ * {{>frag/generatedBy}}
+ */
+
+package {{supportPackage}}
+
+/** Errors that occur while using the API */
+sealed class APIException : Exception() {
+    /** The security client is not authenticated */
+    data object NotAuthenticated : APIException()
+
+    /** The authentication request failed */
+    data class AuthenticationFailed(val response: io.ktor.client.statement.HttpResponse) : APIException()
+
+    /** A response was received that could not be decoded */
+    data class InvalidResponse(val response: io.ktor.client.statement.HttpResponse) : APIException()
+
+    /** The API requested authentication using a `SecurityScheme` that has not been configured in the `SecurityClientController` */
+    data class SecuritySchemeNotConfigured(val scheme: com.example.kotlin.api.security.SecurityScheme) : APIException()
+
+    /** A response was received with an undocumented status code */
+    data class UnexpectedResponse(val response: io.ktor.client.statement.HttpResponse) : APIException()
+}

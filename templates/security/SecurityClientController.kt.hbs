@@ -4,7 +4,7 @@
 
 package {{securityPackage}}
 
-import io.ktor.client.request.HttpRequest
+import com.example.kotlin.api.support.APIException
 import io.ktor.client.request.HttpRequestBuilder
 
 /**
@@ -26,16 +26,16 @@ class SecurityClientController(
     }
 
     override suspend fun reauthenticate(
-        failedRequest: HttpRequest, securityScheme: SecurityScheme, scopes: List<String>?
-    ) {
-        clients[securityScheme]?.reauthenticate(failedRequest, securityScheme, scopes)
-            ?: error("securitySchemeNotConfigured")
+        requestData: RequestData, securityScheme: SecurityScheme, scopes: List<String>?
+    ): Result<Unit> {
+        return clients[securityScheme]?.reauthenticate(requestData, securityScheme, scopes)
+            ?: Result.failure(APIException.SecuritySchemeNotConfigured(securityScheme))
     }
 
     override suspend fun authorize(
-        request: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
-    ) {
-        clients[securityScheme]?.authorize(request, securityScheme, scopes)
-            ?: error("securitySchemeNotConfigured")
+        requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ): Result<Unit> {
+        return clients[securityScheme]?.authorize(requestBuilder, securityScheme, scopes)
+            ?: Result.failure(APIException.SecuritySchemeNotConfigured(securityScheme))
     }
 }

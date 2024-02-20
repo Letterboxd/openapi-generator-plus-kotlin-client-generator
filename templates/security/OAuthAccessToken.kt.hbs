@@ -5,15 +5,15 @@
 package {{securityPackage}}
 
 @kotlinx.serialization.Serializable
-data class OAuthAccessToken (
+data class OAuthAccessToken(
 
     /** The access token that grants the member access. Combine this with the <code>token_type</code> to form the <code>Authorization</code> header. */
     @kotlinx.serialization.SerialName(value = "access_token")
-    val accessToken: String,
+    val accessToken: String? = null,
 
     /** The type of the access token. Use value: <code>bearer</code> */
     @kotlinx.serialization.SerialName(value = "token_type")
-    val tokenType: String,
+    val tokenType: String? = null,
 
     /** The refresh token is used to obtain a new access token, after the access token expires, without needing to prompt the member for their credentials again. The refresh token only expires if it is explicitly invalidated by Letterboxd, in which case the member should be prompted for their credentials (or stored credentials used). */
     @kotlinx.serialization.SerialName(value = "refresh_token")
@@ -27,7 +27,7 @@ data class OAuthAccessToken (
     @kotlinx.serialization.SerialName(value = "scope")
     val scope: String? = null,
 
-) {
+    ) {
     var createdAt: kotlinx.datetime.Instant = kotlinx.datetime.Clock.System.now()
     val isExpired: Boolean
         get() {

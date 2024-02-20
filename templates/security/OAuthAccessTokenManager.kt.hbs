@@ -4,31 +4,32 @@
 
 package {{securityPackage}}
 
+import com.example.kotlin.api.support.APIException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.HttpRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.header
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.parameters
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.net.URL
 import kotlin.time.Duration
 
-typealias AccessTokenHandler = (accessToken: OAuthAccessToken) -> Unit
+typealias AccessTokenHandler = (OAuthAccessToken?) -> Unit
 
 /** An OAuth access token manager that manages using and refreshing the access token, including handling concurrent requests and refreshes. */
 class OAuthAccessTokenManager(
@@ -39,136 +40,83 @@ class OAuthAccessTokenManager(
     private val accessTokenDidChange: AccessTokenHandler? = null
 ) {
 
-    sealed class AccessTokenOperation {
-        data class Get(val deferred: CompletableDeferred<OAuthAccessToken?>) :
-            AccessTokenOperation()
-
-        data class Set(val newToken: OAuthAccessToken, val deferred: CompletableDeferred<Unit>) :
-            AccessTokenOperation()
-
-        data class Refresh(val deferred: CompletableDeferred<Unit>) : AccessTokenOperation()
-
-        sealed class Revoke : AccessTokenOperation() {
-            data class AccessToken(val deferred: CompletableDeferred<Unit>) : Revoke()
-            data class RefreshToken(val deferred: CompletableDeferred<Unit>) : Revoke()
+    private val mutex = Mutex()
+    private val scope = CoroutineScope(Dispatchers.IO)
+    private val authClient = HttpClient(OkHttp) {
+        install(ContentNegotiation) {
+            json(Json {
+                encodeDefaults = false
+            })
         }
     }
 
-    private val scope = CoroutineScope(Dispatchers.IO)
     private var waitingForRefresh: Job? = null
-    private var refreshingToken: Job? = null
+    internal var accessToken: OAuthAccessToken? = null
+        private set
 
-    /** We'll use actors until complex actors are introduced. */
-    @OptIn(ObsoleteCoroutinesApi::class)
-    private val tokenOperationActor = scope.actor<AccessTokenOperation>(Dispatchers.IO) {
-        var accessToken: OAuthAccessToken? = null
+    suspend fun setAccessToken(token: OAuthAccessToken) {
+        mutex.withLock {
+            accessToken = token
+        }
+    }
 
-        for (msg in channel) {
-            when (msg) {
-                is AccessTokenOperation.Get -> {
-                    msg.deferred.complete(accessToken)
+    suspend fun refreshToken(): Result<Unit> {
+        // make refresh token request and update the token.
+        val refreshTokenURL = refreshTokenURL ?: run {
+            return Result.failure(APIException.NotAuthenticated)
+        }
+
+        val previousToken = accessToken?.accessToken
+
+        return mutex.withLock {
+            withContext(NonCancellable) {
+
+                val accessToken =
+                    accessToken ?: return@withContext Result.failure(APIException.NotAuthenticated)
+                val refreshToken = accessToken.refreshToken ?: return@withContext Result.failure(
+                    APIException.NotAuthenticated
+                )
+
+                if (accessToken.accessToken != previousToken) {
+                    // Access token possibly updated, let's make a positive prediction and return success.
+                    return@withContext Result.success(Unit)
                 }
 
-                is AccessTokenOperation.Set -> {
-                    accessToken = msg.newToken
-                    msg.deferred.complete(Unit)
-                }
+                val preEmptiveRequestInstant = Clock.System.now()
 
-                is AccessTokenOperation.Refresh -> {
-                    // make refresh token request and update the token.
-                    val refreshTokenURL = refreshTokenURL ?: error("notAuthenticated")
-                    val refreshToken = accessToken?.refreshToken ?: error("notAuthenticated")
-
-                    HttpClient(OkHttp) {
-                        install(ContentNegotiation) {
-                            json(Json {
-                                encodeDefaults = false
-                            })
-                        }
-                    }.use { client ->
-                        val preEmptiveRequestInstant = Clock.System.now()
-
-                        launch {
-                            val response = client.submitForm(
-                                url = refreshTokenURL.toString(),
-                                formParameters = parameters {
-                                    append("grant_type", "refresh_token")
-                                    append("refresh_token", refreshToken)
-                                    append("client_id", clientId)
-                                    append("client_secret", clientSecret)
-                                }
-                            )
-
-                            when (response.status) {
-                                HttpStatusCode.OK -> {
-                                    val newAccessToken = response.body<OAuthAccessToken>().apply {
-                                        createdAt = preEmptiveRequestInstant
-                                    }
-                                    accessToken = newAccessToken
-                                    newAccessToken.expiresIn?.let { Duration.parse("${it}s") }
-                                        ?.also { startRefreshTimer(it) }
-                                    accessTokenDidChange?.invoke(newAccessToken)
-                                }
-
-                                else -> error("authenticationFailed")
-                            }
-                        }.also { refreshingToken = it }.join()
-
-                        // clear the job.
-                        refreshingToken = null
-
-                        msg.deferred.complete(Unit)
+                val response = authClient.submitForm(
+                    url = refreshTokenURL.toString(),
+                    formParameters = parameters {
+                        append("grant_type", "refresh_token")
+                        append("refresh_token", refreshToken)
+                        append("client_id", clientId)
+                        append("client_secret", clientSecret)
                     }
-                }
+                )
 
-                is AccessTokenOperation.Revoke.AccessToken -> {
-                    // TODO: Discuss this with Karl and Tom, should we be making access token field
-                    //  inside AccessToken object be nullable and clear that?
-                    //  or should we treat access token property of AccessToken object a required
-                    //  property and thus clear the whole access token from this manager once we revoke it?
-                    accessToken = null
-                }
+                return@withContext when (response.status) {
+                    HttpStatusCode.OK -> {
+                        val newAccessToken = response.body<OAuthAccessToken>().apply {
+                            createdAt = preEmptiveRequestInstant
+                        }
+                        this@OAuthAccessTokenManager.accessToken = newAccessToken
+                        newAccessToken.expiresIn
+                            ?.let { Duration.parse("${it}s") }
+                            ?.also { startRefreshTimer(it) }
+                        accessTokenDidChange?.invoke(newAccessToken)
+                        Result.success(Unit)
+                    }
 
-                is AccessTokenOperation.Revoke.RefreshToken -> {
-                    accessToken = accessToken?.copy(refreshToken = null)
+                    HttpStatusCode.Unauthorized -> {
+                        this@OAuthAccessTokenManager.accessToken = null
+                        accessTokenDidChange?.invoke(null)
+                        Result.failure(APIException.AuthenticationFailed(response))
+                    }
+
+                    else -> Result.failure(APIException.AuthenticationFailed(response))
                 }
             }
         }
-    }
-
-    suspend fun getAccessToken(): OAuthAccessToken? {
-        val deferred = CompletableDeferred<OAuthAccessToken?>()
-        val operation = AccessTokenOperation.Get(deferred)
-        tokenOperationActor.send(operation)
-        return deferred.await()
-    }
-
-    suspend fun setAccessToken(token: OAuthAccessToken) {
-        val deferred = CompletableDeferred<Unit>()
-        val operation = AccessTokenOperation.Set(token, deferred)
-        tokenOperationActor.send(operation)
-        return deferred.await()
-    }
-
-    suspend fun refreshToken() {
-        val completableDeferred = CompletableDeferred<Unit>()
-        val operation = AccessTokenOperation.Refresh(completableDeferred)
-        tokenOperationActor.send(operation)
-        completableDeferred.await()
-    }
-
-    private suspend fun revokeRefreshToken() {
-        val completableDeferred = CompletableDeferred<Unit>()
-        val operation = AccessTokenOperation.Revoke.RefreshToken(completableDeferred)
-        tokenOperationActor.send(operation)
-        completableDeferred.await()
-    }
-
-    private suspend fun revokeAccessToken() {
-        val completableDeferred = CompletableDeferred<Unit>()
-        val operation = AccessTokenOperation.Revoke.AccessToken(completableDeferred)
-        tokenOperationActor.send(operation)
-        completableDeferred.await()
     }
 
     private fun authorizationHeader(token: String): String {
@@ -186,86 +134,83 @@ class OAuthAccessTokenManager(
         waitingForRefresh = scope.launch {
             delay(expiresIn - preemptiveAccessTokenRefresh)
 
-            try {
-                refreshToken()
-            } catch (error: Exception) {
-                print("An error occurred in the automatic OAuth access token refresh: $error")
-                return@launch
-            }
+            refreshToken()
+                .onFailure { error ->
+                    println("An error occurred in the automatic OAuth access token refresh: $error")
+                    return@launch
+                }
         }
     }
 
-    suspend fun refreshToken(failedRequest: HttpRequest) {
-        val token = getAccessToken()?.accessToken ?: run {
-            refreshToken()
-            return
+    suspend fun refreshToken(requestData: RequestData) = runCatching {
+        val token = accessToken?.accessToken ?: run {
+            return refreshToken()
         }
 
-        failedRequest.headers["Authorization"]?.let { failedAuthorizationHeader ->
+        requestData.headers["Authorization"]?.let { failedAuthorizationHeader ->
             if (failedAuthorizationHeader == authorizationHeader(token)) {
-                refreshToken()
-                return
+                return refreshToken()
             }
         }
 
-        refreshingToken?.let {
-            it.join()
-            return
+        mutex.withLock {
+            // wait until any operations using the mutex has finished.
         }
 
         // Try again with the current access token (it's not the one that the failed request used)
+        return@runCatching
     }
 
-    suspend fun authorize(request: HttpRequestBuilder) {
-        val accessToken = getAccessToken()
-
+    suspend fun authorize(request: HttpRequestBuilder) = runCatching {
         if (accessToken?.isExpired == true) refreshToken()
 
-        val token = accessToken?.accessToken ?: error("notAuthenticated")
+        val token = accessToken?.accessToken ?: throw APIException.NotAuthenticated
         request.header("Authorization", authorizationHeader(token))
     }
 
     /** Revokes the refresh token using the given [url] */
-    suspend fun revokeRefreshToken(url: URL) {
-        val refreshToken = getAccessToken()?.refreshToken ?: return
+    suspend fun revokeRefreshToken(url: URL) = runCatching {
+        val refreshToken = accessToken?.refreshToken ?: return@runCatching
 
-        HttpClient(OkHttp).use { client ->
-            val response = client.submitForm(
-                url = url.toString(),
-                formParameters = parameters {
-                    append("token_type_hint", "refresh_token")
-                    append("token", refreshToken)
-                    append("client_id", clientId)
-                    append("client_secret", clientSecret)
-                }
-            )
-
-            when (response.status) {
-                HttpStatusCode.OK -> revokeRefreshToken()
-                else -> error("authenticationFailed")
+        val response = authClient.submitForm(
+            url = url.toString(),
+            formParameters = parameters {
+                append("token_type_hint", "refresh_token")
+                append("token", refreshToken)
+                append("client_id", clientId)
+                append("client_secret", clientSecret)
             }
+        )
+
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                accessToken = accessToken?.copy(refreshToken = null)
+            }
+
+            else -> throw APIException.AuthenticationFailed(response)
         }
     }
 
     /** Revokes the refresh token using the given [url] */
-    suspend fun revokeAccessToken(url: URL) {
-        val accessToken = getAccessToken()?.accessToken ?: return
+    suspend fun revokeAccessToken(url: URL) = runCatching {
+        val accessToken = accessToken?.accessToken ?: return@runCatching
 
-        HttpClient(OkHttp).use { client ->
-            val response = client.submitForm(
-                url = url.toString(),
-                formParameters = parameters {
-                    append("token_type_hint", "access_token")
-                    append("token", accessToken)
-                    append("client_id", clientId)
-                    append("client_secret", clientSecret)
-                }
-            )
-
-            when (response.status) {
-                HttpStatusCode.OK -> revokeAccessToken()
-                else -> error("authenticationFailed")
+        val response = authClient.submitForm(
+            url = url.toString(),
+            formParameters = parameters {
+                append("token_type_hint", "access_token")
+                append("token", accessToken)
+                append("client_id", clientId)
+                append("client_secret", clientSecret)
             }
+        )
+
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                this@OAuthAccessTokenManager.accessToken = null
+            }
+
+            else -> throw APIException.AuthenticationFailed(response)
         }
     }
 

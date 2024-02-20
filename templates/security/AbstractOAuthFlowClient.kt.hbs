@@ -4,19 +4,37 @@
 
 package {{securityPackage}}
 
-import io.ktor.client.request.HttpRequest
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import java.net.URL
 import kotlin.time.Duration
 
-open class AbstractOAuthFlowClient(
+abstract class AbstractOAuthFlowClient(
     val clientId: String,
     val clientSecret: String,
     refreshURL: URL?,
     autoRefreshInterval: Duration? = null,
     accessTokenDidChange: AccessTokenHandler?
 ) : SecurityClient {
+
     protected val tokenManager: OAuthAccessTokenManager
+    protected val client = HttpClient(OkHttp) {
+        install(ContentNegotiation) {
+            json(Json {
+                encodeDefaults = false
+            })
+        }
+    }
+
+    val refreshToken: String?
+        get() = tokenManager.accessToken?.refreshToken
+
+    val accessToken: OAuthAccessToken?
+        get() = tokenManager.accessToken
 
     var revocationURL: URL? = null
 
@@ -26,27 +44,19 @@ open class AbstractOAuthFlowClient(
         )
     }
 
-    suspend fun refreshToken(): String? = tokenManager.getAccessToken()?.refreshToken
-
-    suspend fun accessToken(): OAuthAccessToken? = tokenManager.getAccessToken()
-
-    /// Authenticate the security client using a refresh token.
-//    suspend fun authenticate(refreshToken: String) {
-//        tokenManager.setAccessToken(OAuthAccessToken(refreshToken: refreshToken))
-//        tokenManager.refreshToken()
-//    }
+    /** Authenticate the security client using a refresh token. */
+    suspend fun authenticate(refreshToken: String): Result<Unit> {
+        tokenManager.setAccessToken(OAuthAccessToken(refreshToken = refreshToken))
+        return tokenManager.refreshToken()
+    }
 
     override suspend fun reauthenticate(
-        failedRequest: HttpRequest, securityScheme: SecurityScheme, scopes: List<String>?
-    ) {
-        tokenManager.refreshToken(failedRequest)
-    }
+        requestData: RequestData, securityScheme: SecurityScheme, scopes: List<String>?
+    ) = tokenManager.refreshToken(requestData)
 
     override suspend fun authorize(
-        request: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
-    ) {
-        tokenManager.authorize(request)
-    }
+        requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ) = tokenManager.authorize(requestBuilder)
 
     suspend fun revokeRefreshToken() {
         val revocationURL = revocationURL ?: return

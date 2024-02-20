@@ -4,26 +4,23 @@
 
 package {{securityPackage}}
 
-import io.ktor.client.request.HttpRequest
 import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.headers
+import io.ktor.client.request.header
 import io.ktor.util.encodeBase64
 
 /** A [SecurityClient] responsible for handling Basic authentication credentials. */
 class BasicAuthenticationSecurityClient(
     private val username: String, private val password: String
 ) : SecurityClient {
+
+    /** **This function does not do anything**, as username and password do not expire. */
     override suspend fun reauthenticate(
-        failedRequest: HttpRequest, securityScheme: SecurityScheme, scopes: List<String>?
-    ) {
-        // Do nothing.
-    }
+        requestData: RequestData, securityScheme: SecurityScheme, scopes: List<String>?
+    ) = Result.success(Unit)
 
     override suspend fun authorize(
-        request: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
-    ) {
-        request.headers {
-            append("Authorization", "$username:$password".encodeBase64())
-        }
+        requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ) = runCatching {
+        requestBuilder.header("Authorization", "$username:$password".encodeBase64())
     }
 }
