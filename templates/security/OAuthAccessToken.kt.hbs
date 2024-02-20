@@ -4,36 +4,37 @@
 
 package {{securityPackage}}
 
-@kotlinx.serialization.Serializable
-data class OAuthAccessToken(
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlin.time.Duration
 
+@Serializable
+data class OAuthAccessToken(
     /** The access token that grants the member access. Combine this with the <code>token_type</code> to form the <code>Authorization</code> header. */
-    @kotlinx.serialization.SerialName(value = "access_token")
-    val accessToken: String? = null,
+    @SerialName(value = "access_token") val accessToken: String? = null,
 
     /** The type of the access token. Use value: <code>bearer</code> */
-    @kotlinx.serialization.SerialName(value = "token_type")
-    val tokenType: String? = null,
+    @SerialName(value = "token_type") val tokenType: String? = null,
 
     /** The refresh token is used to obtain a new access token, after the access token expires, without needing to prompt the member for their credentials again. The refresh token only expires if it is explicitly invalidated by Letterboxd, in which case the member should be prompted for their credentials (or stored credentials used). */
-    @kotlinx.serialization.SerialName(value = "refresh_token")
-    val refreshToken: String? = null,
+    @SerialName(value = "refresh_token") val refreshToken: String? = null,
 
     /** The number of seconds before the access token expires. */
-    @kotlinx.serialization.SerialName(value = "expires_in")
-    val expiresIn: Long? = null,
+    @SerialName(value = "expires_in") val expiresIn: Long? = null,
 
     /** The approved scope or scopes. */
-    @kotlinx.serialization.SerialName(value = "scope")
-    val scope: String? = null,
+    @SerialName(value = "scope") val scope: String? = null
+) {
 
-    ) {
-    var createdAt: kotlinx.datetime.Instant = kotlinx.datetime.Clock.System.now()
+    var createdAt: Instant = Clock.System.now()
     val isExpired: Boolean
         get() {
             val expiresIn = expiresIn ?: return false
-            val expiredInstant = createdAt + kotlin.time.Duration.parse("${expiresIn}s")
-            val now = kotlinx.datetime.Clock.System.now()
-            return expiredInstant >= now
+            val expiredInstant = createdAt + Duration.parse("${expiresIn}s")
+            val now = Clock.System.now()
+            return expiredInstant < now
         }
+
 }
