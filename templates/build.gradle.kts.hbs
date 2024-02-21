@@ -8,10 +8,10 @@ plugins {
 
 group = "{{{groupId}}}"
 version = "{{{version}}}"
-
+{{!-- 
 val ktorVersion = "{{lookup gradle.versions 'ktor' '2.3.7'}}"
 val kotlinxSerializationVersion = "{{lookup gradle.versions 'kotlinx_serialization' '1.6.2'}}"
-val kotlinxDatetimeVersion = "{{lookup gradle.versions 'kotlinx_datetime' '0.5.0'}}"
+val kotlinxDatetimeVersion = "{{lookup gradle.versions 'kotlinx_datetime' '0.5.0'}}" --}}
 
 dependencies {
     api("io.ktor:ktor-client-core:$ktorVersion")
