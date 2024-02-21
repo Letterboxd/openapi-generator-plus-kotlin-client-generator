@@ -83,98 +83,24 @@ open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: k
         .replace("{{safe '{'}}{{{serializedName}}}{{safe '}'}}", "${{identifier name}}")
     {{/each}}
     {{/if}}
-    val response = client.{{{lowerCase httpMethod}}}(path){{#if _params}} {
+    {{#join '_requestConfiguration' ''}}
+    {{#if queryParams}}.{{/if}}
+    {{#if requestBody.nativeType}}.{{/if}}
+    {{#if securityRequirements}}.{{/if}}
+    {{/join}}
+    val response = client.{{{lowerCase httpMethod}}}(path){{#if _requestConfiguration}} {
+
         {{#if queryParams}}
-        url {
-            {{#each queryParams}}
-            {{#ifeq schema.schemaType "ARRAY"}}
-            {{{name}}}{{#unless required}}?{{/unless}}.forEach { parameters.append("{{{name}}}", "$it") }
-            {{else}}
-            {{#if required}}
-            parameters.append("{{{name}}}", "${{{name}}}")
-            {{else}}
-            {{{name}}}?.let { parameters.append("{{{name}}}", "$it") }
-            {{/if}}
-            {{/ifeq}}
-            {{/each}}
-        }
+        {{>frag/requestParameter}}
+
         {{/if}}
         {{#if requestBody.nativeType}}
-        {{#with requestBody}}
-        contentType(ContentType.parse("{{{defaultContent.mediaType.mimeType}}}"))
-        setBody(requestBody)
-        {{/with}}
+        {{>frag/requestBody}}
+
         {{/if}}
         {{#if securityRequirements}}
+        {{>frag/requestAuthentication}}
 
-        var didAuthenticate = false
-        var lastException: Throwable? = null
-        {{#each securityRequirements.requirements}}
-
-        // Authentication with {{#each schemes}}{{scheme.name}}{{#unless @last}}, {{/unless}}{{/each}}
-        if (!didAuthenticate) {
-            val requestBuilderToBeAuthed = 
-                io.ktor.client.request.HttpRequestBuilder().takeFrom(this)
-
-            run {
-                configuration.securityClient?.let { securityClient ->
-                {{#each schemes}}
-{{#join '_scopes' ''}}
-{{#if scopes}}
-listOf(
-{{#each scopes}}
-{{{stringLiteral name}}}{{#unless @last}}, {{/unless}}
-{{/each}}
-)
-{{else}}
-null
-{{/if}}
-{{/join}}
-                    // {{{scheme.name}}}
-                    securityClient.authorize(
-                        requestBuilderToBeAuthed, 
-                        {{{../../_securityScheme}}}.{{{upperCase scheme.name}}}, 
-                        {{{_scopes}}}
-                    ).onFailure { firstAttemptException ->
-                        if (firstAttemptException is {{{../../_apiException}}}.NotAuthenticated) {
-                            securityClient.reauthenticate(
-                                requestBuilderToBeAuthed.requestData(),
-                                {{{../../_securityScheme}}}.{{{upperCase scheme.name}}},
-                                {{{_scopes}}}
-                            ).onFailure { secondAttemptException ->
-                                lastException = secondAttemptException
-                                return@run
-                            }
-                            securityClient.authorize(
-                                requestBuilderToBeAuthed, 
-                                {{{../../_securityScheme}}}.{{{upperCase scheme.name}}}, 
-                                {{{_scopes}}}
-                            ).onFailure { secondAttemptException ->
-                                lastException = secondAttemptException
-                                return@run
-                            }
-                        } else {
-                            lastException = firstAttemptException
-                            return@run
-                        }
-                    }
-{{#unless @last}}
-
-{{/unless}}
-                    {{/each}}
-                }
-
-                didAuthenticate = true
-                takeFrom(requestBuilderToBeAuthed)
-            }
-        }
-        {{/each}}
-
-        {{#unless securityRequirements.optional}}
-        if (!didAuthenticate) {
-            lastException?.let { return Result.failure(it) }
-        }
-        {{/unless}}
         {{/if}}
     }
     {{/if}}
