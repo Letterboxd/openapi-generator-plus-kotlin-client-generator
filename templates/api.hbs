@@ -4,15 +4,17 @@
 
 package {{apiPackage}}
 
+import com.example.kotlin.api.security.requestData
 import io.ktor.client.call.body
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 /** TODO: Only import the request types that are used by this API. */
 import io.ktor.client.request.*
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 
 open class {{name}}Api(
-    val client: io.ktor.client.HttpClient
+    val configuration: com.example.kotlin.api.support.Configuration
 ) {
+    private val client: io.ktor.client.HttpClient = configuration.client
 
     {{!-- var configuration: Configuration
     var cachePolicy: URLRequest.CachePolicy

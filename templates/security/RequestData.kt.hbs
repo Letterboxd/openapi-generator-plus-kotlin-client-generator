@@ -4,8 +4,9 @@
 
 package {{securityPackage}}
 
-import io.ktor.client.request.HttpRequest
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.request
 import io.ktor.client.utils.EmptyContent
 import io.ktor.http.Headers
 import io.ktor.http.HttpMethod
@@ -31,10 +32,12 @@ fun HttpRequestBuilder.requestData() = RequestData(
     attributes = attributes
 )
 
-fun HttpRequest.requestData() = RequestData(
-    url = url,
-    method = method,
-    headers = headers,
-    body = content,
-    attributes = attributes
-)
+fun HttpResponse.requestData() = request.run {
+    RequestData(
+        url = url,
+        method = method,
+        headers = headers,
+        body = content,
+        attributes = attributes
+    )
+}
