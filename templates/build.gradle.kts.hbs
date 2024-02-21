@@ -2,25 +2,12 @@
  * {{>frag/generatedBy}}
  */
 
-tasks.wrapper {
-    gradleVersion = "{{lookup gradle.versions 'gradle' '8.5'}}"
-    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
-}
-
 plugins {
-    val kotlinVersion = "{{lookup gradle.versions 'kotlin' '1.9.22'}}"
-    
-    kotlin("jvm") version kotlinVersion
-    kotlin("plugin.serialization") version kotlinVersion
+    alias(libs.plugins.jetbrainsKotlinJvm)
 }
 
 group = "{{{groupId}}}"
 version = "{{{version}}}"
-
-repositories {
-    // Use Maven Central for resolving dependencies.
-    mavenCentral()
-}
 
 val ktorVersion = "{{lookup gradle.versions 'ktor' '2.3.7'}}"
 val kotlinxSerializationVersion = "{{lookup gradle.versions 'kotlinx_serialization' '1.6.2'}}"
