@@ -3,22 +3,18 @@
  */
 
 plugins {
-    alias(libs.plugins.jetbrainsKotlinJvm)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "{{{groupId}}}"
 version = "{{{version}}}"
-{{!-- 
-val ktorVersion = "{{lookup gradle.versions 'ktor' '2.3.7'}}"
-val kotlinxSerializationVersion = "{{lookup gradle.versions 'kotlinx_serialization' '1.6.2'}}"
-val kotlinxDatetimeVersion = "{{lookup gradle.versions 'kotlinx_datetime' '0.5.0'}}" --}}
 
 dependencies {
-    api("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
-    implementation("io.ktor:ktor-client-auth:$ktorVersion")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:${kotlinxDatetimeVersion}")
+    api(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime)
 }
