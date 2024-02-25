@@ -617,6 +617,8 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			const gradle = generatorOptions.gradle
 			if (gradle) {
 				await emit('build.gradle.kts', path.join(outputPath, 'build.gradle.kts'), { ...rootContext, ...gradle }, false, hbs)
+				await emit('settings.gradle.kts', path.join(outputPath, 'settings.gradle.kts'), { ...rootContext, ...gradle }, false, hbs)
+				await emit('libs.versions.toml', path.join(outputPath, 'gradle', 'libs.versions.toml'), { ...rootContext, ...gradle }, false, hbs)
 			}
 			
 			/* Support */
