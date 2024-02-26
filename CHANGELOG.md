@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.3
+
+### Patch Changes
+
+- bb556b6: Fix internal package references
+
 ## 0.0.2
 
 ### Patch Changes
