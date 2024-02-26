@@ -38,10 +38,10 @@ requestBody = requestBody
 {{{group.path}}}{{{path}}}
 {{/join}}
 {{#join '_securityScheme' ''}}
-{{{group.securityPackage}}}.SecurityScheme
+{{{@root.securityPackage}}}.SecurityScheme
 {{/join}}
 {{#join '_apiException' ''}}
-{{{group.supportPackage}}}.APIException
+{{{@root.supportPackage}}}.APIException
 {{/join}}
 sealed class {{{_resultClassName}}} {
 {{#each responses}}

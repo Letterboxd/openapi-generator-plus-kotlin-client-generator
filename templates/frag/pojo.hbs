@@ -20,10 +20,10 @@ data class {{{name}}}(
     {{/if}}
     @kotlinx.serialization.SerialName(value = "{{{serializedName}}}")
     {{#ifeq schema.nativeType.concreteType 'java.net.URL'}}
-    @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.KURLSerializer::class)
+    @kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KURLSerializer::class)
     {{/ifeq}}
     {{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
-    @kotlinx.serialization.Serializable(with = {{{../supportPackage}}}.KUUIDSerializer::class)
+    @kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KUUIDSerializer::class)
     {{/ifeq}}
     {{#if overrides}}override {{/if}}val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{#if initialValue}}{{{initialValue.literalValue}}}{{else}}{{{undefinedValueLiteral schema}}}{{/if}}{{/unless}}{{#unless @last}},{{/unless}}
 
