@@ -110,7 +110,7 @@ open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: k
         {{#ifneq code 401}}
         io.ktor.http.HttpStatusCode.fromValue({{{code}}}) -> {
         {{#if defaultContent.nativeType}}
-            val body: {{{defaultContent.nativeType.concreteType}}} = response.body()
+            val body: {{{defaultContent.nativeType}}} = response.body()
             Result.success({{../_resultClassName}}.`{{{code}}}`(body))
         {{else}}
             Result.success({{../_resultClassName}}.`{{{code}}}`)
