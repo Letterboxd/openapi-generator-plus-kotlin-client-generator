@@ -20,7 +20,7 @@ data class Configuration(
     val basePath: String? = null,
 
     /** The handler for all security requests. */
-    var securityClient: com.example.kotlin.api.security.SecurityClient? = null,
+    var securityClient: {{{supportPackage}}}.SecurityClient? = null,
 
 //    val cachePolicy: URLRequest.CachePolicy? = null,
 

@@ -16,7 +16,7 @@ sealed class APIException : Exception() {
     data class InvalidResponse(val response: io.ktor.client.statement.HttpResponse) : APIException()
 
     /** The API requested authentication using a `SecurityScheme` that has not been configured in the `SecurityClientController` */
-    data class SecuritySchemeNotConfigured(val scheme: com.example.kotlin.api.security.SecurityScheme) : APIException()
+    data class SecuritySchemeNotConfigured(val scheme: {{{securityPackage}}}.SecurityScheme) : APIException()
 
     /** A response was received with an undocumented status code */
     data class UnexpectedResponse(val response: io.ktor.client.statement.HttpResponse) : APIException()

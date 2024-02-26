@@ -4,7 +4,7 @@
 
 package {{apiPackage}}
 
-import com.example.kotlin.api.security.requestData
+import {{{securityPackage}}}.requestData
 import io.ktor.client.call.body
 /** TODO: Only import the request types that are used by this API. */
 import io.ktor.client.request.*
@@ -12,7 +12,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
 open class {{name}}Api(
-    val configuration: com.example.kotlin.api.support.Configuration
+    val configuration: {{{supportPackage}}}.Configuration
 ) {
     private val client: io.ktor.client.HttpClient = configuration.client
 
