@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.4
+
+### Patch Changes
+
+- 8b3344e: Fix a wrongly fixed package
+
 ## 0.0.3
 
 ### Patch Changes
