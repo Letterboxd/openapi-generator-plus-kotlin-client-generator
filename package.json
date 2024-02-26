@@ -1,6 +1,6 @@
 {
   "name": "@openapi-generator-plus/kotlin-client-generator",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An OpenAPI Generator Plus template for a Kotlin API client using Ktor",
   "keywords": [
     "openapi-generator-plus",
