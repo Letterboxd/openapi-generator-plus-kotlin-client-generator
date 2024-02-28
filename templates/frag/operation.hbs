@@ -45,16 +45,16 @@ requestBody = requestBody
 {{/join}}
 sealed class {{{_resultClassName}}} {
 {{#each responses}}
-    {{!-- {{#ifneq code 401}} --}}
+    {{#ifneq code 401}}
     {{#if description}}
     /** {{{description}}} */
     {{/if}}
     {{#if defaultContent.nativeType}}
-    data class `{{{code}}}`(val value: {{{defaultContent.nativeType}}}): {{{../_resultClassName}}}()
+    data class {{#unless isCatchAll}}`{{{code}}}`{{else}}Default{{/unless}}(val value: {{{defaultContent.nativeType}}}): {{{../_resultClassName}}}()
     {{else}}
-    data object `{{{code}}}`: {{{../_resultClassName}}}()
+    data object {{#unless isCatchAll}}`{{{code}}}`{{else}}Default{{/unless}}: {{{../_resultClassName}}}()
     {{/if}}
-    {{!-- {{/ifneq}} --}}
+    {{/ifneq}}
 {{/each}}
 }
 
@@ -106,19 +106,6 @@ open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: k
     {{/if}}
 
     return when (response.status) {
-    {{#each responses}}
-        {{#ifneq code 401}}
-        io.ktor.http.HttpStatusCode.fromValue({{{code}}}) -> {
-        {{#if defaultContent.nativeType}}
-            val body: {{{defaultContent.nativeType}}} = response.body()
-            Result.success({{../_resultClassName}}.`{{{code}}}`(body))
-        {{else}}
-            Result.success({{../_resultClassName}}.`{{{code}}}`)
-        {{/if}}
-        }
-        {{/ifneq}}
-
-    {{/each}}
     {{#if securityRequirements}}
         io.ktor.http.HttpStatusCode.Unauthorized -> {
             if (!allowsReauth) return Result.failure({{{_apiException}}}.AuthenticationFailed(response))
@@ -160,7 +147,28 @@ open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: k
         }
 
     {{/if}}
-        else -> Result.failure({{{_apiException}}}.UnexpectedResponse(response))
+    {{#each responses}}
+        {{#ifneq code 401}}
+        {{#unless isCatchAll}}
+        io.ktor.http.HttpStatusCode.fromValue({{{code}}}) -> {
+        {{else}}
+        else -> {
+        {{/unless}}
+        {{#if defaultContent.nativeType}}
+            val body: {{{defaultContent.nativeType}}} = response.body()
+            Result.success({{../_resultClassName}}.{{#unless isCatchAll}}`{{{code}}}`{{else}}Default{{/unless}}(body))
+        {{else}}
+            Result.success({{../_resultClassName}}.{{#unless isCatchAll}}`{{{code}}}`{{else}}Default{{/unless}})
+        {{/if}}
+        }
+        {{/ifneq}}
+    {{#unless @last}}
 
+    {{/unless}}
+    {{/each}}
+    {{#unless catchAllResponse}}
+
+        else -> Result.failure({{{_apiException}}}.UnexpectedResponse(response))
+    {{/unless}}
     }
 }
