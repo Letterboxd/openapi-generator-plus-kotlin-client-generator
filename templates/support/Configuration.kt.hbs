@@ -33,8 +33,10 @@ data class Configuration(
 ) {
     internal val client: HttpClient = HttpClient(OkHttp) {
         basePath?.let {
+            // Default URL must have a trailing slash, otherwise any paths are ignored by Ktor.
+            val basePath = if (it.endsWith("/")) it else "$it/"
             defaultRequest {
-                url(it)
+                url(basePath)
             }
         }
 
