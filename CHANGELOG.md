@@ -1,5 +1,15 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.5
+
+### Patch Changes
+
+- 89ea047: Tidy up passing of supportPackage
+- 91e069f: Fix array responses
+- cce1021: fix paths for base urls without trailing slashes being ignored
+- 5934068: add support for catch-all response codes
+- f871a3c: remove redundant absolute reference of Duration class
+
 ## 0.0.4
 
 ### Patch Changes
