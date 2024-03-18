@@ -12,22 +12,9 @@
 {{/join}}
 @kotlinx.serialization.Serializable
 data class {{{name}}}(
-    
-{{#each properties}}
-    {{>frag/propertyDocumentation}}
-    {{#if deprecated}}
-    @kotlin.Deprecated(message = "This property is deprecated.")
-    {{/if}}
-    @kotlinx.serialization.SerialName(value = "{{{serializedName}}}")
-    {{#ifeq schema.nativeType.concreteType 'java.net.URL'}}
-    @kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KURLSerializer::class)
-    {{/ifeq}}
-    {{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
-    @kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KUUIDSerializer::class)
-    {{/ifeq}}
-    {{#if overrides}}override {{/if}}val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{#if initialValue}}{{{initialValue.literalValue}}}{{else}}{{{undefinedValueLiteral schema}}}{{/if}}{{/unless}}{{#unless @last}},{{/unless}}
 
-{{/each}}
+    {{>frag/properties properties=properties}}
+    
 ){{#if _parents}} : {{{_parents}}}{{/if}}{{#if schemas}} {
 
     {{>frag/nestedSchemas}}

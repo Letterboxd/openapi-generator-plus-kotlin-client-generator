@@ -2,11 +2,8 @@
 @kotlinx.serialization.Serializable
 sealed class {{{name}}} {
 {{#if properties}}
-{{#each properties}}
 
-    {{>frag/propertyDocumentation}}
-    abstract val {{{name}}}: {{{nativeType}}}
-{{/each}}
+    {{>frag/properties properties=properties abstract=true}}
 {{/if}}
 {{#each composes}}
 {{#if name}}
