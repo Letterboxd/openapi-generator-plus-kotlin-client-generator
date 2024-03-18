@@ -3,7 +3,7 @@
 sealed class {{{name}}} {
 {{#if properties}}
 
-    {{>frag/properties properties=properties abstract=true}}
+    {{>frag/propertiesAbstract properties=properties}}
 {{/if}}
 {{#each composes}}
 {{#if name}}
@@ -15,14 +15,14 @@ sealed class {{{name}}} {
 {{#if discriminator}}
     @kotlinx.serialization.Serializable
     data class Unknown(
+
         /** The unknown discriminator value passed from the API. */
         @kotlinx.serialization.SerialName("{{{discriminator.serializedName}}}")
-        val {{{discriminator.name}}}: {{{discriminator.nativeType}}}{{#if properties}},{{/if}}
-        {{#each properties}}
+        val {{{discriminator.name}}}: {{{discriminator.nativeType}}}{{#if properties}},
 
-        {{>frag/propertyDocumentation}}
-        override val {{{name}}}: {{{nativeType}}}{{#unless @last}},{{/unless}}
-        {{/each}}
+        {{>frag/propertiesConstructor properties=properties overrides=true}}
+        {{/if}}
+        
     ): {{{nativeType.parentType}}}()
 {{else}}
     @kotlinx.serialization.Serializable

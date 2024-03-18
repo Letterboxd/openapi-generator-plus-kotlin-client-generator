@@ -13,8 +13,8 @@
 @kotlinx.serialization.Serializable
 data class {{{name}}}(
 
-    {{>frag/properties properties=properties}}
-    
+    {{>frag/propertiesConstructor properties=properties}}
+
 ){{#if _parents}} : {{{_parents}}}{{/if}}{{#if schemas}} {
 
     {{>frag/nestedSchemas}}

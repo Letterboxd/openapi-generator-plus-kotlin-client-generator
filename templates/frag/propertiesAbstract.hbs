@@ -1,0 +1,12 @@
+{{#if (ifdef properties)}}
+{{#each properties}}
+{{#unless @first}}
+
+{{/unless}}
+{{>frag/propertyDocumentation}}
+{{#if deprecated}}
+@kotlin.Deprecated(message = "This property is deprecated.")
+{{/if}}
+abstract val {{{name}}}: {{{nativeType}}}
+{{/each}}
+{{/if}}

@@ -14,6 +14,23 @@
 {{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
 @kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KUUIDSerializer::class)
 {{/ifeq}}
-{{#if (ifdef ../abstract)}}abstract {{else}}{{#if overrides}}override {{/if}}{{/if}}val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{#if initialValue}}{{{initialValue.literalValue}}}{{else}}{{{undefinedValueLiteral schema}}}{{/if}}{{/unless}}{{#unless @last}},{{/unless}}
+{{#join "_parameter" ""}}
+{{#or overrides (and (ifdef ../overrides) ../overrides)}}
+override 
+{{/or}}
+val {{{name}}}: {{{nativeType}}}
+{{#unless required}}
+ = 
+{{#if initialValue}}
+{{{initialValue.literalValue}}}
+{{else}}
+{{{undefinedValueLiteral schema}}}
+{{/if}}
+{{/unless}}
+{{#unless @last}}
+,
+{{/unless}}
+{{/join}}
+{{{_parameter}}}
 {{/each}}
 {{/if}}
