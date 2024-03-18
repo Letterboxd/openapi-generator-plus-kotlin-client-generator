@@ -1,19 +1,68 @@
 {{>frag/schemaDocumentation}}
 @kotlinx.serialization.Serializable(with = {{{name}}}.Serializer::class)
-sealed interface {{{name}}} {
-    val value: kotlin.String
+sealed class {{{name}}} {
+    
+    companion object {
 
-    data class Unknown(override val value: kotlin.String) : {{{name}}} {
-        override fun toString(): String = value
+        /** Returns all enum cases in an immutable list, excluding the unknown case. */
+        val entries = listOf(
+{{#join '_entries' ',
+'}}
+{{#each enumValues}}
+            {{{../name}}}.{{className name}}
+{{/each}}
+{{/join}}
+{{{_entries}}}
+        )
+
+        /**
+         * Returns the enum constant of this type with the specified name. 
+         * The string must match exactly an identifier used to declare an enum constant in this type. 
+         * (Extraneous whitespace characters are not permitted.)
+         * If an enum constant of this type with the specified name does not exist,
+         * a default case of [Unknown] case will be returned that contains the provided value.
+         */
+        fun valueOf(value: kotlin.String): {{{name}}} = when (value) {
+            {{#each enumValues}}
+            "{{{value}}}" -> {{{../name}}}.{{className name}}
+            {{/each}}
+            else -> {{{name}}}.Unknown(value)
+        }
+
     }
+
+    /** Returns the API value of this enum constant. */
+    abstract val value: kotlin.String
+    
+    /** Returns the name of this enum constant, exactly as declared in its enum declaration. */
+    abstract val name: kotlin.String
+    
+    /**
+     * Returns the ordinal of this enumeration constant (its position in its enum declaration, where the initial constant
+     * is assigned an ordinal of zero).
+     */
+    abstract val ordinal: kotlin.Int
 
 {{#each enumValues}}
-    data object {{className name}} : {{{../name}}} {
-        override val value: kotlin.String = "{{{value}}}"
-        override fun toString(): String = value
+{{#join "_entryName" ""}}
+{{className name}}
+{{/join}}
+    data object {{{_entryName}}} : {{{../name}}}() {
+        override val name = "{{{_entryName}}}"
+        override val value = "{{{value}}}"
+        override val ordinal = entries.indexOf(this)
+        override fun toString() = value
     }
-    
 {{/each}}
+
+    data class Unknown(
+        override val value: kotlin.String,
+    ) : SearchResultType() {
+        override val name = value
+        override val ordinal = {{{count enumValues}}}
+        override fun toString() = value
+    }
+
     object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
         override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
             kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
@@ -29,12 +78,7 @@ sealed interface {{{name}}} {
         }
 
         override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): {{{name}}} =
-            when (val value = decoder.decodeString()) {
-                {{#each enumValues}}
-                "{{{value}}}" -> {{{../name}}}.{{className name}}
-                {{/each}}
-                else -> {{{name}}}.Unknown(value)
-            }
+            valueOf(decoder.decodeString())
     }
 
 }
