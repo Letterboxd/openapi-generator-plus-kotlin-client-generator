@@ -1,21 +1,69 @@
 {{>frag/schemaDocumentation}}
 @kotlinx.serialization.Serializable
 sealed class {{{name}}} {
+{{#if properties}}
+{{#each properties}}
 
+    {{>frag/propertyDocumentation}}
+    abstract val {{{name}}}: {{{nativeType}}}
+{{/each}}
+{{/if}}
 {{#each composes}}
 {{#if name}}
-    @kotlinx.serialization.Serializable
-    data class {{{name}}}(val value: {{{nativeType}}}): {{{../name}}}()
 
+    {{>frag/pojo}}
 {{/if}}
 {{/each}}
+
 {{#if discriminator}}
     @kotlinx.serialization.Serializable
-    data class Unknown(val discriminatorValue: {{{discriminator.nativeType}}}): {{{name}}}()
+    data class Unknown(
+        /** The unknown discriminator value passed from the API. */
+        @kotlinx.serialization.SerialName("{{{discriminator.serializedName}}}")
+        val {{{discriminator.name}}}: {{{discriminator.nativeType}}}{{#if properties}},{{/if}}
+        {{#each properties}}
+
+        {{>frag/propertyDocumentation}}
+        override val {{{name}}}: {{{nativeType}}}{{#unless @last}},{{/unless}}
+        {{/each}}
+    ): {{{nativeType.parentType}}}()
 {{else}}
     @kotlinx.serialization.Serializable
-    data object Unknown: {{{name}}}()
+    data object Unknown: {{{nativeType.parentType}}}()
 {{/if}}
+
+    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
+        override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
+            kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
+                "{{{nativeType.concreteType}}}Serializer",
+                kotlinx.serialization.descriptors.PrimitiveKind.STRING
+            )
+
+        override fun serialize(
+            encoder: kotlinx.serialization.encoding.Encoder,
+            value: {{{name}}}
+        ) = when (value) {
+            {{#each composes}}
+            {{#if name}}
+            is {{{name}}} -> encoder.encodeSerializableValue({{{name}}}.serializer(), value)
+            {{/if}}
+            {{/each}}
+            is Unknown -> encoder.encodeSerializableValue(Unknown.serializer(), value)
+        }
+
+{{#join '_discriminatorType' ''}}
+{{{discriminator.nativeType.concreteType}}}
+{{/join}}
+        override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): {{{name}}} = 
+            when (decoder.decodeSerializableValue({{{_discriminatorType}}}.serializer())) {
+                {{#each discriminator.references}}
+                {{#if schema.name}}
+                {{{../_discriminatorType}}}.{{value}} -> decoder.decodeSerializableValue({{{schema.name}}}.serializer()){{log schema}}
+                {{/if}}
+                {{/each}}
+                is {{{discriminator.nativeType.concreteType}}}.Unknown -> decoder.decodeSerializableValue(Unknown.serializer())
+            }
+    }
 
     {{>frag/nestedSchemas}}
 }
