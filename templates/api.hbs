@@ -10,6 +10,8 @@ import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 open class {{name}}Api(
     val configuration: {{{supportPackage}}}.Configuration

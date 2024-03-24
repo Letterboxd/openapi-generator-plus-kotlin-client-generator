@@ -64,6 +64,6 @@ null
 
 {{#unless securityRequirements.optional}}
 if (!didAuthenticate) {
-    lastException?.let { return Result.failure(it) }
+    lastException?.let { return@withContext Result.failure(it) }
 }
 {{/unless}}
