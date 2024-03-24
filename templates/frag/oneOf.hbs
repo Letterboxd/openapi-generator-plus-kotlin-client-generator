@@ -23,10 +23,10 @@ sealed class {{{name}}} {
         {{>frag/propertiesConstructor properties=properties overrides=true}}
         {{/if}}
         
-    ): {{{nativeType.parentType}}}()
+    ) : {{{nativeType.parentType}}}()
 {{else}}
     @kotlinx.serialization.Serializable
-    data object Unknown: {{{nativeType.parentType}}}()
+    data object Unknown : {{{nativeType.parentType}}}()
 {{/if}}
 
     object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
