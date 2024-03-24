@@ -57,7 +57,7 @@ sealed class {{{name}}} {
 
     data class Unknown(
         override val value: kotlin.String,
-    ) : SearchResultType() {
+    ) : {{{name}}}() {
         override val name = value
         override val ordinal = {{{count enumValues}}}
         override fun toString() = value
