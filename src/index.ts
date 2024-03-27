@@ -135,7 +135,7 @@ function createJavaLikeContext(context: KotlinGeneratorContext): JavaLikeContext
 	const javaLikeContext: JavaLikeContext = {
 		...context,
 		reservedWords: () => RESERVED_WORDS,
-		defaultConstantStyle: ConstantStyle.camelCase,
+		defaultConstantStyle: ConstantStyle.pascalCase,
 	}
 	return javaLikeContext
 }

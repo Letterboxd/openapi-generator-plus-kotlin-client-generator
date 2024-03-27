@@ -44,11 +44,8 @@ sealed class {{{name}}} {
     abstract val ordinal: kotlin.Int
 
 {{#each enumValues}}
-{{#join "_entryName" ""}}
-{{className name}}
-{{/join}}
-    data object {{{_entryName}}} : {{{../name}}}() {
-        override val name = "{{{_entryName}}}"
+    data object {{{className name}}} : {{{../name}}}() {
+        override val name = "{{{className name}}}"
         override val value = "{{{value}}}"
         override val ordinal = entries.indexOf(this)
         override fun toString() = value
