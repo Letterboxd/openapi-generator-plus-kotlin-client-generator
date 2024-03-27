@@ -27,6 +27,8 @@ pnpm link --global @openapi-generator-plus/kotlin-client-generator
 
 ## Limitations
 - This library uses Ktor with OkHttp engine for making network calls. Thus, it follows the current compatibility of OkHttp engines in Ktor, which are JVM and Android.
+- This library assumes JSON is used for model representation during network calls.
+- This library has a limitation in only supporting one-of discriminators of type string or an enum that is represented in string.
 
 ## Requirements
 - The library was developed with the latest version of Kotlin at the time of development (version 1.9.22), and so it utilises Kotlin language features that were introduced after version 1.9.0, such as `data object`. Therefore, it’s strongly recommended to use the latest version of Kotlin, if not, at least 1.9.22.
