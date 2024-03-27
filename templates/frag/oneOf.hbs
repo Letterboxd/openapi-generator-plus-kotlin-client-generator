@@ -1,15 +1,17 @@
 {{>frag/schemaDocumentation}}
 @kotlinx.serialization.Serializable
-sealed class {{{name}}} {
-{{#if properties}}
-
-    {{>frag/propertiesAbstract properties=properties}}
-{{/if}}
+sealed class {{{className name}}} {
 {{#each composes}}
-{{#if name}}
 
-    {{>frag/pojo}}
-{{/if}}
+    @kotlinx.serialization.Serializable
+    data class {{{className name}}}(
+
+        val value: {{{nativeType}}}
+
+        @kotlinx.serialization.SerialName("{{{../discriminator.serializedName}}}")
+        val {{{../discriminator.name}}}: {{{../discriminator.nativeType}}} = "hi"
+
+    ) : {{{../nativeType.parentType}}}()
 {{/each}}
 
 {{#if discriminator}}
@@ -18,10 +20,7 @@ sealed class {{{name}}} {
 
         /** The unknown discriminator value passed from the API. */
         @kotlinx.serialization.SerialName("{{{discriminator.serializedName}}}")
-        val {{{discriminator.name}}}: {{{discriminator.nativeType}}}{{#if properties}},
-
-        {{>frag/propertiesConstructor properties=properties overrides=true}}
-        {{/if}}
+        val {{{discriminator.name}}}: {{{discriminator.nativeType}}}
         
     ) : {{{nativeType.parentType}}}()
 {{else}}
@@ -29,23 +28,23 @@ sealed class {{{name}}} {
     data object Unknown : {{{nativeType.parentType}}}()
 {{/if}}
 
-    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
+    object Serializer : kotlinx.serialization.KSerializer<{{{className name}}}> {
         override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
             kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
-                "{{{nativeType.concreteType}}}Serializer",
+                "{{{nativeType}}}Serializer",
                 kotlinx.serialization.descriptors.PrimitiveKind.STRING
             )
 
         override fun serialize(
             encoder: kotlinx.serialization.encoding.Encoder,
-            value: {{{name}}}
+            value: {{{nativeType}}}
         ) = when (value) {
             {{#each composes}}
             {{#if name}}
-            is {{{name}}} -> encoder.encodeSerializableValue({{{name}}}.serializer(), value)
+            is {{{className name}}} -> encoder.encodeSerializableValue({{{nativeType}}}.serializer(), value.value)
             {{/if}}
             {{/each}}
-            is Unknown -> encoder.encodeSerializableValue(Unknown.serializer(), value)
+            is Unknown -> throw CannotEncodeUnknown()
         }
 
 {{#join '_discriminatorType' ''}}
@@ -55,7 +54,7 @@ sealed class {{{name}}} {
             when (decoder.decodeSerializableValue({{{_discriminatorType}}}.serializer())) {
                 {{#each discriminator.references}}
                 {{#if schema.name}}
-                {{{../_discriminatorType}}}.{{value}} -> decoder.decodeSerializableValue({{{schema.name}}}.serializer()){{log schema}}
+                {{{../_discriminatorType}}}.{{value}} -> decoder.decodeSerializableValue({{{schema.name}}}.serializer())
                 {{/if}}
                 {{/each}}
                 is {{{discriminator.nativeType.concreteType}}}.Unknown -> decoder.decodeSerializableValue(Unknown.serializer())
