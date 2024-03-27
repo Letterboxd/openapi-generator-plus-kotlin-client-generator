@@ -33,21 +33,14 @@ sealed class {{{name}}} {
 
     /** Returns the API value of this enum constant. */
     abstract val value: kotlin.String
-    
+
     /** Returns the name of this enum constant, exactly as declared in its enum declaration. */
     abstract val name: kotlin.String
-    
-    /**
-     * Returns the ordinal of this enumeration constant (its position in its enum declaration, where the initial constant
-     * is assigned an ordinal of zero).
-     */
-    abstract val ordinal: kotlin.Int
 
 {{#each enumValues}}
     data object {{{className name}}} : {{{../name}}}() {
         override val name = "{{{className name}}}"
         override val value = "{{{value}}}"
-        override val ordinal = entries.indexOf(this)
         override fun toString() = value
     }
 {{/each}}
@@ -56,7 +49,6 @@ sealed class {{{name}}} {
         override val value: kotlin.String,
     ) : {{{name}}}() {
         override val name = value
-        override val ordinal = {{{count enumValues}}}
         override fun toString() = value
     }
 
