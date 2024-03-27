@@ -1,17 +1,26 @@
+import kotlinx.serialization.descriptors.buildSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
 {{>frag/schemaDocumentation}}
-@kotlinx.serialization.Serializable
+@kotlinx.serialization.Serializable(with = {{{name}}}.Serializer::class)
 sealed class {{{className name}}} {
 {{#each composes}}
 
-    @kotlinx.serialization.Serializable
-    data class {{{className name}}}(
+    @kotlinx.serialization.Serializable(with = {{{className name}}}.Serializer::class)
+    data class {{{className name}}}(val value: {{{nativeType}}}) : {{{../nativeType.parentType}}}() {
+        object Serializer : kotlinx.serialization.KSerializer<{{{className name}}}> {
+            override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
+                {{{nativeType}}}.serializer().descriptor
 
-        val value: {{{nativeType}}}
-
-        @kotlinx.serialization.SerialName("{{{../discriminator.serializedName}}}")
-        val {{{../discriminator.name}}}: {{{../discriminator.nativeType}}} = "hi"
-
-    ) : {{{../nativeType.parentType}}}()
+            override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder) =
+                {{{className name}}}(value = {{{nativeType}}}.serializer().deserialize(decoder))
+            
+            override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: {{{className name}}}) =
+                {{{nativeType}}}.serializer().serialize(encoder, value.value)
+        }
+    }
 {{/each}}
 
 {{#if discriminator}}
@@ -28,37 +37,64 @@ sealed class {{{className name}}} {
     data object Unknown : {{{nativeType.parentType}}}()
 {{/if}}
 
-    object Serializer : kotlinx.serialization.KSerializer<{{{className name}}}> {
+    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
+        @OptIn(
+            kotlinx.serialization.InternalSerializationApi::class,
+            kotlinx.serialization.ExperimentalSerializationApi::class
+        )
         override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
-            kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
-                "{{{nativeType}}}Serializer",
-                kotlinx.serialization.descriptors.PrimitiveKind.STRING
-            )
+            buildSerialDescriptor("{{{nativeType}}}Serializer", kotlinx.serialization.descriptors.PolymorphicKind.OPEN) {
+                element<String>("{{{discriminator.serializedName}}}")
+            }
 
-        override fun serialize(
-            encoder: kotlinx.serialization.encoding.Encoder,
-            value: {{{nativeType}}}
-        ) = when (value) {
-            {{#each composes}}
-            {{#if name}}
-            is {{{className name}}} -> encoder.encodeSerializableValue({{{nativeType}}}.serializer(), value.value)
-            {{/if}}
-            {{/each}}
-            is Unknown -> throw CannotEncodeUnknown()
-        }
+        override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): {{{name}}} {
+            require(decoder is kotlinx.serialization.json.JsonDecoder)
 
-{{#join '_discriminatorType' ''}}
-{{{discriminator.nativeType.concreteType}}}
-{{/join}}
-        override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): {{{name}}} = 
-            when (decoder.decodeSerializableValue({{{_discriminatorType}}}.serializer())) {
+            val tree = decoder.decodeJsonElement()
+            val type = tree.jsonObject["{{{discriminator.serializedName}}}"]?.let { decoder.json.decodeFromJsonElement({{{discriminator.nativeType.concreteType}}}.serializer(), it) }
+            requireNotNull(type) { "The discriminator for a child of `{{{name}}}` could not be found." }
+
+            val nextTree = kotlinx.serialization.json.JsonObject(tree.jsonObject.toMutableMap().apply {
+                remove(key = "{{{discriminator.serializedName}}}")
+            })
+
+            return when (type) {
                 {{#each discriminator.references}}
                 {{#if schema.name}}
-                {{{../_discriminatorType}}}.{{value}} -> decoder.decodeSerializableValue({{{schema.name}}}.serializer())
+                {{{literalValue}}} -> decoder.json.decodeFromJsonElement({{{../name}}}.{{{schema.name}}}.serializer(), nextTree)
                 {{/if}}
                 {{/each}}
-                is {{{discriminator.nativeType.concreteType}}}.Unknown -> decoder.decodeSerializableValue(Unknown.serializer())
+                else -> Unknown(type = type)
             }
+        }
+
+        override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: {{{name}}}) {
+            require(encoder is kotlinx.serialization.json.JsonEncoder)
+
+            val valueElement: kotlinx.serialization.json.JsonElement = when (value) {
+                {{#each composes}}
+                {{#if name}}
+                is {{{../name}}}.{{{name}}} -> encoder.json.encodeToJsonElement({{{../name}}}.{{{name}}}.serializer(), value)
+                {{/if}}
+                {{/each}}
+                is {{{name}}}.Unknown -> throw kotlinx.serialization.SerializationException("Cannot encode an unknown one-of value of `{{{name}}}`.")
+            }
+
+            val completeObject = kotlinx.serialization.json.JsonObject(valueElement.jsonObject.toMutableMap().apply {
+                val discriminator = when (value) {
+                    {{#each discriminator.references}}
+                    {{#if schema.name}}
+                    is {{{../name}}}.{{{schema.name}}} -> "{{{value}}}"
+                    {{/if}}
+                    {{/each}}
+                    is {{{name}}}.Unknown -> throw kotlinx.serialization.SerializationException("Cannot encode an unknown one-of value of `{{{name}}}`.")
+                }
+
+                put("{{{discriminator.serializedName}}}", kotlinx.serialization.json.JsonPrimitive(discriminator))
+            })
+
+            encoder.encodeJsonElement(completeObject)
+        }
     }
 
     {{>frag/nestedSchemas}}
