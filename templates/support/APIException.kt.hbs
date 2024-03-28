@@ -5,19 +5,21 @@
 package {{supportPackage}}
 
 /** Errors that occur while using the API */
-sealed class APIException : Exception() {
+sealed class APIException(message: String) : Exception(message) {
     /** The security client is not authenticated */
-    data object NotAuthenticated : APIException()
+    data object NotAuthenticated : APIException("Not authenticated") {
+        private fun readResolve(): Any = NotAuthenticated
+    }
 
     /** The authentication request failed */
-    data class AuthenticationFailed(val response: io.ktor.client.statement.HttpResponse) : APIException()
+    data class AuthenticationFailed(val response: io.ktor.client.statement.HttpResponse) : APIException("Authentication Failed: ${response.status}")
 
     /** A response was received that could not be decoded */
-    data class InvalidResponse(val response: io.ktor.client.statement.HttpResponse) : APIException()
+    data class InvalidResponse(val response: io.ktor.client.statement.HttpResponse) : APIException("Invalid Response: ${response.status}")
 
     /** The API requested authentication using a `SecurityScheme` that has not been configured in the `SecurityClientController` */
-    data class SecuritySchemeNotConfigured(val scheme: {{{securityPackage}}}.SecurityScheme) : APIException()
+    data class SecuritySchemeNotConfigured(val scheme: {{{securityPackage}}}.SecurityScheme) : APIException("Security Scheme Not Configured: ${scheme.rawValue}")
 
     /** A response was received with an undocumented status code */
-    data class UnexpectedResponse(val response: io.ktor.client.statement.HttpResponse) : APIException()
+    data class UnexpectedResponse(val response: io.ktor.client.statement.HttpResponse) : APIException("Unexpected Response: ${response.status}")
 }
