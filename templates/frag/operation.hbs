@@ -76,7 +76,7 @@ open suspend fun {{{name}}}(queryParams: {{{className _requestName}}}{{#if reque
 {{#if deprecated}}
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
-open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: kotlin.Boolean): Result<{{{_resultClassName}}}> {
+open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: kotlin.Boolean = true): Result<{{{_resultClassName}}}> {
     return withContext(Dispatchers.IO) {
         val path = "{{{stripLeadingSlash _fullPath}}}"
         {{#if pathParams}}
