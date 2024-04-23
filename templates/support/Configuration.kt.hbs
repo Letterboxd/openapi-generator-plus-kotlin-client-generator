@@ -11,6 +11,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonBuilder
 import kotlin.time.Duration
 
 typealias ConfigurationFinalizeRequestBlock = (HttpRequestBuilder) -> Unit
@@ -22,13 +23,11 @@ data class Configuration(
     /** The handler for all security requests. */
     var securityClient: {{{securityPackage}}}.SecurityClient? = null,
 
-//    val cachePolicy: URLRequest.CachePolicy? = null,
-
     val timeoutInterval: Duration = Duration.parse("30s"),
 
-//    val responseQueue: DispatchQueue? = null,
+    val finalizeRequestBlock: ConfigurationFinalizeRequestBlock? = null,
 
-    val finalizeRequestBlock: ConfigurationFinalizeRequestBlock? = null
+    val jsonBuilder: (JsonBuilder.() -> Unit)? = null
 
 ) {
     internal val client: HttpClient = HttpClient(OkHttp) {
@@ -42,6 +41,7 @@ data class Configuration(
 
         install(ContentNegotiation) {
             json(Json {
+                jsonBuilder?.invoke(this)
                 encodeDefaults = false
             })
         }
