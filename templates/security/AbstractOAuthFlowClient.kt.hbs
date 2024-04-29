@@ -58,13 +58,13 @@ abstract class AbstractOAuthFlowClient(
         requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
     ) = tokenManager.authorize(requestBuilder)
 
-    suspend fun revokeRefreshToken() {
-        val revocationURL = revocationURL ?: return
-        tokenManager.revokeRefreshToken(revocationURL)
+    suspend fun revokeRefreshToken(): Result<Unit> {
+        val revocationURL = revocationURL ?: return Result.failure(IllegalArgumentException("Revocation URL missing."))
+        return tokenManager.revokeRefreshToken(revocationURL)
     }
 
-    suspend fun revokeAccessToken() {
-        val revocationURL = revocationURL ?: return
-        tokenManager.revokeAccessToken(revocationURL)
+    suspend fun revokeAccessToken(): Result<Unit> {
+        val revocationURL = revocationURL ?: return Result.failure(IllegalArgumentException("Revocation URL missing."))
+        return tokenManager.revokeAccessToken(revocationURL)
     }
 }
