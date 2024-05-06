@@ -11,11 +11,11 @@
 {{/each}}
 {{/join}}
 @kotlinx.serialization.Serializable
-data class {{{name}}}(
+{{#if properties}}data {{/if}}class {{{name}}}{{#if properties}}(
 
     {{>frag/propertiesConstructor properties=properties}}
 
-){{#if _parents}} : {{{_parents}}}{{/if}}{{#if schemas}} {
+){{/if}}{{#if _parents}} : {{{_parents}}}{{/if}}{{#if schemas}} {
 
     {{>frag/nestedSchemas}}
 }{{/if}}
