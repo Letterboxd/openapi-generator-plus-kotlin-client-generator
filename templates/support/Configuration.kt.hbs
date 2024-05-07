@@ -5,6 +5,7 @@
 package {{supportPackage}}
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
@@ -27,6 +28,9 @@ data class Configuration(
 
     val finalizeRequestBlock: ConfigurationFinalizeRequestBlock? = null,
 
+    /** A block that allows you to further configure the HTTP client. */
+    val httpClientConfig: (HttpClientConfig<*>.() -> Unit)? = null,
+
     val jsonBuilder: (JsonBuilder.() -> Unit)? = null
 
 ) {
@@ -38,6 +42,8 @@ data class Configuration(
                 url(basePath)
             }
         }
+
+        httpClientConfig?.invoke(this)
 
         install(ContentNegotiation) {
             json(Json {
