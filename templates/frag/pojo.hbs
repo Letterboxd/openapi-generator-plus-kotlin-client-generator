@@ -9,6 +9,9 @@
 {{#each implements}}
 {{{nativeType.parentType}}}
 {{/each}}
+{{#if @root.isAndroidBundleCompatible}}
+java.io.Serializable
+{{/if}}
 {{/join}}
 @kotlinx.serialization.Serializable
 {{#if properties}}data {{/if}}class {{{name}}}{{#if properties}}(
