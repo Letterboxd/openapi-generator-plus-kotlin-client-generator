@@ -52,7 +52,10 @@ class OAuthAccessTokenManager(
 
     private var waitingForRefresh: Job? = null
     internal var accessToken: OAuthAccessToken? = null
-        private set
+        private set(newToken) {
+            field = newToken
+            accessTokenDidChange?.invoke(newToken)
+        }
 
     suspend fun setAccessToken(token: OAuthAccessToken) {
         mutex.withLock {
@@ -103,13 +106,11 @@ class OAuthAccessTokenManager(
                         newAccessToken.expiresIn
                             ?.let { Duration.parse("${it}s") }
                             ?.also { startRefreshTimer(it) }
-                        accessTokenDidChange?.invoke(newAccessToken)
                         Result.success(Unit)
                     }
 
                     HttpStatusCode.Unauthorized -> {
                         this@OAuthAccessTokenManager.accessToken = null
-                        accessTokenDidChange?.invoke(null)
                         Result.failure(APIException.AuthenticationFailed(response))
                     }
 
