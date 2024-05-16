@@ -1,8 +1,10 @@
 # OpenAPI Generator Plus Kotlin Client Generator
 
+This generator uses [Kotlin Serialization](https://kotlinlang.org/docs/serialization.html), Ktor and OkHttp.
+
 ## Development
 
-To use this library in development we use of the `link` command.
+To use this library in development we use the `link` command.
 
 Get started by ensuring that your target project is using the same node version so that the global link will be discoverable. We use a `.nvmrc` file in this project to set the version.
 
@@ -29,6 +31,7 @@ pnpm link --global @openapi-generator-plus/kotlin-client-generator
 - This library uses Ktor with OkHttp engine for making network calls. Thus, it follows the current compatibility of OkHttp engines in Ktor, which are JVM and Android.
 - This library assumes JSON is used for model representation during network calls.
 - This library has a limitation in only supporting one-of discriminators of type string or an enum that is represented in string.
+- The generated model objects are not `java.io.Serializable`, because Kotlin date and time classes are not `java.io.Serializable`. If you want to put model objects into an `android.os.Bundle` or `android.os.Intent`, you need to serialize the model object first (such as to json).
 
 ## Requirements
 - The library was developed with the latest version of Kotlin at the time of development (version 1.9.22), and so it utilises Kotlin language features that were introduced after version 1.9.0, such as `data object`. Therefore, it’s strongly recommended to use the latest version of Kotlin, if not, at least 1.9.22.
