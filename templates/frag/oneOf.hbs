@@ -73,7 +73,7 @@ sealed class {{{className name}}}{{#if @root.isAndroidBundleCompatible}} : java.
                 {{{literalValue}}} -> decoder.json.decodeFromJsonElement({{{../name}}}.{{{schema.name}}}.serializer(), nextTree)
                 {{/if}}
                 {{/each}}
-                else -> Unknown(type = type)
+                else -> Unknown({{{discriminator.name}}} = type)
             }
         }
 
