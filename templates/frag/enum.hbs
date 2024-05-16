@@ -52,11 +52,7 @@ sealed class {{{name}}}{{#if @root.isAndroidBundleCompatible}} : java.io.Seriali
         override fun toString() = value
     }
 
-    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}>{{#if @root.isAndroidBundleCompatible}}, java.io.Serializable{{/if}} {
-        {{#if @root.isAndroidBundleCompatible}}
-        private fun readResolve(): Any = Serializer
-
-        {{/if}}
+    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
         override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
             kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
                 "{{{nativeType.concreteType}}}Serializer",
