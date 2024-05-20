@@ -18,7 +18,7 @@ export interface CodegenOptionsKotlin extends JavaLikeOptions {
 	dateTimeImplementation: string
 	binaryRepresentation: string
 
-	isAndroidBundleCompatible: boolean
+	isJavaSerializable: boolean
 
 	gradle: GradleOptions | null
 }

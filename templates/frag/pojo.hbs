@@ -9,7 +9,7 @@
 {{#each implements}}
 {{{nativeType.parentType}}}
 {{/each}}
-{{#if @root.isAndroidBundleCompatible}}
+{{#if @root.isJavaSerializable}}
 java.io.Serializable
 {{/if}}
 {{/join}}
