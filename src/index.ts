@@ -120,7 +120,7 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		dateTimeImplementation: configString(config, 'dateTimeImplementation', `${supportPackage}.Instant`),
 		binaryRepresentation: configString(config, 'binaryRepresentation', 'kotlin.ByteArray'),
 
-		isJavaSerializable: configBoolean(config, 'isJavaSerializable', false),
+		isJavaSerializable: configBoolean(config, 'isJavaSerializable', true),
 
 		gradle: gradle ? {
 			groupId: configString(gradle, 'groupId', 'com.example', 'gradle.'),
