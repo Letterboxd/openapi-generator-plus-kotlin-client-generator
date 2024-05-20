@@ -11,7 +11,11 @@ sealed class {{{className name}}} {
 
     @kotlinx.serialization.Serializable(with = {{{className name}}}.Serializer::class)
     data class {{{className name}}}(val value: {{{nativeType}}}) : {{{../nativeType.parentType}}}() {
-        object Serializer : kotlinx.serialization.KSerializer<{{{className name}}}> {
+        object Serializer : kotlinx.serialization.KSerializer<{{{className name}}}>{{#if @root.isAndroidBundleCompatible}}, java.io.Serializable{{/if}} {
+            {{#if @root.isAndroidBundleCompatible}}
+            private fun readResolve(): Any = Serializer
+
+            {{/if}}
             override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
                 {{{nativeType}}}.serializer().descriptor
 
@@ -38,7 +42,11 @@ sealed class {{{className name}}} {
     data object Unknown : {{{nativeType.parentType}}}()
 {{/if}}
 
-    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}> {
+    object Serializer : kotlinx.serialization.KSerializer<{{{name}}}>{{#if @root.isAndroidBundleCompatible}}, java.io.Serializable{{/if}} {
+        {{#if @root.isAndroidBundleCompatible}}
+        private fun readResolve(): Any = Serializer
+        
+        {{/if}}
         @OptIn(
             kotlinx.serialization.InternalSerializationApi::class,
             kotlinx.serialization.ExperimentalSerializationApi::class
