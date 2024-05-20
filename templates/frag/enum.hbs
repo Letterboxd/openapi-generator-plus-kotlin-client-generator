@@ -1,6 +1,6 @@
 {{>frag/schemaDocumentation}}
 @kotlinx.serialization.Serializable(with = {{{name}}}.Serializer::class)
-sealed class {{{name}}} {
+sealed class {{{name}}}{{#if @root.isAndroidBundleCompatible}} : java.io.Serializable{{/if}} {
     
     companion object {
 

@@ -6,7 +6,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 {{>frag/schemaDocumentation}}
 @kotlinx.serialization.Serializable(with = {{{name}}}.Serializer::class)
-sealed class {{{className name}}} {
+sealed class {{{className name}}}{{#if @root.isAndroidBundleCompatible}} : java.io.Serializable{{/if}} {
 {{#each composes}}
 
     @kotlinx.serialization.Serializable(with = {{{className name}}}.Serializer::class)

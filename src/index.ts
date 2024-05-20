@@ -120,6 +120,8 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		dateTimeImplementation: configString(config, 'dateTimeImplementation', `${supportPackage}.Instant`),
 		binaryRepresentation: configString(config, 'binaryRepresentation', 'kotlin.ByteArray'),
 
+		isAndroidBundleCompatible: configBoolean(config, 'isAndroidBundleCompatible', false),
+
 		gradle: gradle ? {
 			groupId: configString(gradle, 'groupId', 'com.example', 'gradle.'),
 			version: configString(gradle, 'version', '0.0.1', 'gradle.'),
