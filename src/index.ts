@@ -100,6 +100,7 @@ const RESERVED_WORDS = [
 export function options(config: CodegenConfig, context: KotlinGeneratorContext): CodegenOptionsKotlin {
 	const packageName = configString(config, 'package', 'com.example')
 	const apiPackage = configString(config, 'apiPackage', packageName)
+	const supportPackage = `${packageName}.support`
 	
 	const customTemplates = configString(config, 'customTemplates', undefined)
 
@@ -109,14 +110,14 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		...javaLikeOptions(config, createJavaLikeContext(context)),
 		apiPackage,
 		modelPackage: configString(config, 'modelPackage', `${packageName}.model`),
-		supportPackage: configString(config, 'supportPackage', `${packageName}.support`),
+		supportPackage: configString(config, 'supportPackage', supportPackage),
 		securityPackage: configString(config, 'securityPackage', `${packageName}.security`),
 		customTemplatesPath: customTemplates ? computeCustomTemplatesPath(config.configPath, customTemplates) : null,
 		hideGenerationTimestamp: configBoolean(config, 'hideGenerationTimestamp', false),
 
-		dateImplementation: configString(config, 'dateImplementation', 'kotlinx.datetime.LocalDate'),
-		timeImplementation: configString(config, 'timeImplementation', 'kotlinx.datetime.LocalTime'),
-		dateTimeImplementation: configString(config, 'dateTimeImplementation', 'kotlinx.datetime.Instant'),
+		dateImplementation: configString(config, 'dateImplementation', `${supportPackage}.LocalDate`),
+		timeImplementation: configString(config, 'timeImplementation', `${supportPackage}.LocalTime`),
+		dateTimeImplementation: configString(config, 'dateTimeImplementation', `${supportPackage}.Instant`),
 		binaryRepresentation: configString(config, 'binaryRepresentation', 'kotlin.ByteArray'),
 
 		gradle: gradle ? {
@@ -227,11 +228,11 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					} else if (format === 'binary') {
 						return `"${escapeString(value)}".toByteArray(kotlin.text.Charsets.UTF_8)`
 					} else if (format === 'date') {
-						return `${generatorOptions.dateImplementation}.parse("${escapeString(value)}")`
+						return `${generatorOptions.dateImplementation}(value = "${escapeString(value)}")`
 					} else if (format === 'time') {
-						return `${generatorOptions.timeImplementation}.parse("${escapeString(value)}")`
+						return `${generatorOptions.timeImplementation}(value = "${escapeString(value)}")`
 					} else if (format === 'date-time') {
-						return `${generatorOptions.dateTimeImplementation}.parse("${escapeString(value)}")`
+						return `${generatorOptions.dateTimeImplementation}(value = "${escapeString(value)}")`
 					} else if (format === 'uuid') {
 						return `java.util.UUID.fromString("${escapeString(value)}")`
 					} else {
