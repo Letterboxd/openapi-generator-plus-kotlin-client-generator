@@ -2,6 +2,9 @@
 @kotlinx.serialization.Serializable(with = {{{name}}}.Serializer::class)
 sealed class {{{className name}}}{{#if @root.isJavaSerializable}} : java.io.Serializable{{/if}} {
 {{#each composes}}
+{{#join '_serializer' ''}}
+kotlinx.serialization.serializer<{{{nativeType}}}>()
+{{/join}}
 
     @kotlinx.serialization.Serializable(with = {{{className name}}}.Serializer::class)
     data class {{{className name}}}(val value: {{{nativeType}}}) : {{{../nativeType.parentType}}}() {
@@ -11,13 +14,13 @@ sealed class {{{className name}}}{{#if @root.isJavaSerializable}} : java.io.Seri
 
             {{/if}}
             override val descriptor: kotlinx.serialization.descriptors.SerialDescriptor =
-                {{{nativeType}}}.serializer().descriptor
+                {{{_serializer}}}.descriptor
 
             override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder) =
-                {{{className name}}}(value = {{{nativeType}}}.serializer().deserialize(decoder))
+                {{{className name}}}(value = {{{_serializer}}}.deserialize(decoder))
             
             override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: {{{className name}}}) =
-                {{{nativeType}}}.serializer().serialize(encoder, value.value)
+                {{{_serializer}}}.serialize(encoder, value.value)
         }
     }
 {{/each}}
