@@ -54,6 +54,7 @@ kotlinx.serialization.serializer<{{{nativeType}}}>()
             }
 
         override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): {{{name}}} {
+            {{#if discriminator}}
             require(decoder is kotlinx.serialization.json.JsonDecoder)
 
             val jsonObject = decoder.decodeJsonElement() as? kotlinx.serialization.json.JsonObject ?: error("JsonElement is not a JsonObject")
@@ -72,6 +73,9 @@ kotlinx.serialization.serializer<{{{nativeType}}}>()
                 {{/each}}
                 else -> Unknown({{{discriminator.name}}} = type)
             }
+            {{else}}
+            TODO("Deserialization of models without an explicit discriminator is currently unsupported.")
+            {{/if}}
         }
 
         override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: {{{name}}}) {
@@ -86,6 +90,7 @@ kotlinx.serialization.serializer<{{{nativeType}}}>()
                 is {{{name}}}.Unknown -> throw kotlinx.serialization.SerializationException("Cannot encode an unknown one-of value of `{{{name}}}`.")
             } as? kotlinx.serialization.json.JsonObject ?: error("JsonElement is not a JsonObject")
 
+            {{#if discriminator}}
             val completeObject = kotlinx.serialization.json.JsonObject(jsonObject.toMutableMap().apply {
                 val discriminator = when (value) {
                     {{#each discriminator.references}}
@@ -100,6 +105,9 @@ kotlinx.serialization.serializer<{{{nativeType}}}>()
             })
 
             encoder.encodeJsonElement(completeObject)
+            {{else}}
+            encoder.encodeJsonElement(jsonObject)
+            {{/if}}
         }
     }
 
