@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.7
+
+### Patch Changes
+
+- 0938016: Add convenience constructors to create generator date time objects from Kotlin date time objects
+
 ## 0.0.6
 
 ### Patch Changes
