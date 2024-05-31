@@ -7,12 +7,13 @@ package {{supportPackage}}
 /** [value] will be a string in ISO 8601 date time format, e.g. 2020-08-30T18:43:00Z */
 @kotlinx.serialization.Serializable(with = Instant.Serializer::class)
 data class Instant(val value: String){{#if @root.isJavaSerializable}} : java.io.Serializable{{/if}} {
+
+    constructor(value: kotlinx.datetime.Instant): this(value.toString())
+
     val kInstant: kotlinx.datetime.Instant
         get() = kotlinx.datetime.Instant.parse(value)
 
     override fun toString(): String = value
-
-    fun parse(kInstant: kotlinx.datetime.Instant) = Instant(kInstant.toString())
 
     object Serializer : kotlinx.serialization.KSerializer<Instant>{{#if @root.isJavaSerializable}}, java.io.Serializable{{/if}} {
         {{#if @root.isJavaSerializable}}
@@ -36,12 +37,13 @@ data class Instant(val value: String){{#if @root.isJavaSerializable}} : java.io.
 /** [value] will be a string in ISO 8601 date format, e.g. 2020-08-30 */
 @kotlinx.serialization.Serializable(with = LocalDate.Serializer::class)
 data class LocalDate(val value: String){{#if @root.isJavaSerializable}} : java.io.Serializable{{/if}} {
+
+    constructor(value: kotlinx.datetime.LocalDate): this(value.toString())
+
     val kLocalDate: kotlinx.datetime.LocalDate
         get() = kotlinx.datetime.LocalDate.parse(value)
 
     override fun toString(): String = value
-
-    fun parse(kLocalDate: kotlinx.datetime.LocalDate) = LocalDate(kLocalDate.toString())
 
     object Serializer : kotlinx.serialization.KSerializer<LocalDate>{{#if @root.isJavaSerializable}}, java.io.Serializable{{/if}} {
         {{#if @root.isJavaSerializable}}
@@ -65,12 +67,13 @@ data class LocalDate(val value: String){{#if @root.isJavaSerializable}} : java.i
 /** [value] will be a string in ISO 8601 time format, e.g. 18:43:00.004 */
 @kotlinx.serialization.Serializable(with = LocalTime.Serializer::class)
 data class LocalTime(val value: String){{#if @root.isJavaSerializable}} : java.io.Serializable{{/if}} {
+
+    constructor(value: kotlinx.datetime.LocalTime): this(value.toString())
+
     val kLocalTime: kotlinx.datetime.LocalTime
         get() = kotlinx.datetime.LocalTime.parse(value)
 
     override fun toString(): String = value
-
-    fun parse(kLocalTime: kotlinx.datetime.LocalTime) = LocalTime(kLocalTime.toString())
 
     object Serializer : kotlinx.serialization.KSerializer<LocalTime>{{#if @root.isJavaSerializable}}, java.io.Serializable{{/if}} {
         {{#if @root.isJavaSerializable}}
