@@ -2,6 +2,10 @@
   "name": "@openapi-generator-plus/kotlin-client-generator",
   "version": "0.0.7",
   "description": "An OpenAPI Generator Plus template for a Kotlin API client using Ktor",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
   "keywords": [
     "openapi-generator-plus",
     "openapi-generator-plus-generator",
