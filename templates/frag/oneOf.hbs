@@ -2,9 +2,9 @@
 @kotlinx.serialization.Serializable(with = {{{name}}}.Serializer::class)
 sealed class {{{className name}}}{{#if @root.isJavaSerializable}} : java.io.Serializable{{/if}} {
 {{#each composes}}
-{{#join '_serializer' ''}}
+{{#set '_serializer'}}
 kotlinx.serialization.serializer<{{{nativeType}}}>()
-{{/join}}
+{{/set}}
 
     @kotlinx.serialization.Serializable(with = {{{className name}}}.Serializer::class)
     data class {{{className name}}}(val value: {{{nativeType}}}) : {{{../nativeType.parentType}}}() {
