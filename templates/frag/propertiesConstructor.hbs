@@ -15,9 +15,9 @@
 @kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KUUIDSerializer::class)
 {{/ifeq}}
 {{#join "_parameter" ""}}
-{{#or overrides (and (ifdef ../overrides) ../overrides)}}
+{{#if overrides}}
 override 
-{{/or}}
+{{/if}}
 val {{{name}}}: {{{nativeType}}}
 {{#unless required}}
  = 
