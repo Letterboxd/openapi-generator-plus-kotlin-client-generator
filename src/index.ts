@@ -352,7 +352,8 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				case CodegenSchemaType.BOOLEAN: {
 					return new context.NativeType('kotlin.Boolean')
 				}
-				case CodegenSchemaType.BINARY: {
+				case CodegenSchemaType.BINARY:
+				case CodegenSchemaType.FILE: {
 					return new context.NativeType(generatorOptions.binaryRepresentation)
 				}
 			}
