@@ -372,15 +372,15 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			const { componentNativeType, uniqueItems } = options
 			if (uniqueItems) {
 				return new context.TransformingNativeType(componentNativeType, {
-					default: (nativeType) => `kotlin.collections.List<${(nativeType.componentType || nativeType).nativeType}>`,
-					literalType: () => 'kotlin.collections.List',
-					concreteType: (nativeType) => `${(nativeType.componentType || nativeType).nativeType}`,
+					default: (nativeType) => `kotlin.collections.Set<${(nativeType.componentType || nativeType).nativeType}>`,
+					literalType: () => 'kotlin.collections.Set',
+					concreteType: (nativeType) => `kotlin.collections.Set<${(nativeType.componentType || nativeType).nativeType}>`,
 				})
 			} else {
 				return new context.TransformingNativeType(componentNativeType, {
 					default: (nativeType) => `kotlin.collections.List<${(nativeType.componentType || nativeType).nativeType}>`,
 					literalType: () => 'kotlin.collections.List',
-					concreteType: (nativeType) => `${(nativeType.componentType || nativeType).nativeType}`,
+					concreteType: (nativeType) => `kotlin.collections.List<${(nativeType.componentType || nativeType).nativeType}>`,
 				})
 			}
 		},
@@ -389,7 +389,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			return new context.ComposingNativeType([keyNativeType, componentNativeType], {
 				default: ([keyNativeType, componentNativeType]) => `kotlin.collections.Map<${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}>`,
 				literalType: () => 'kotlin.collections.Map',
-				concreteType: ([keyNativeType, componentNativeType]) => `${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}`,
+				concreteType: ([keyNativeType, componentNativeType]) => `kotlin.collections.Map<${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}>`,
 			})
 		},
 		nativeTypeUsageTransformer: ({ nullable, required }) => ({
@@ -501,10 +501,10 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			switch (schemaType) {
 				case CodegenSchemaType.ARRAY:
 					/* Initialise required array properties with an empty array */
-					return { value: [], literalValue: `listOf<${nativeType.concreteType}>()` }
+					return { value: [], literalValue: `listOf<${nativeType.componentType}>()` }
 				case CodegenSchemaType.MAP:
 					/* Initialise empty map properties with an empty map */
-					return { value: {}, literalValue: `mapOf<${nativeType.concreteType}>()` }
+					return { value: {}, literalValue: `mapOf<${nativeType.componentType}>()` }
 				default:
 					return null
 			}
