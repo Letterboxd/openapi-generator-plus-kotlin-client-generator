@@ -1,5 +1,17 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.8
+
+### Patch Changes
+
+- 2633cc8: replace incorrect use of #join to #set
+- 5a0fe81: Support FILE schema type
+- c90b980: include comma even on last property
+- b932240: Fix concrete types of collection types, and use Set for unique items
+- ce894d3: Tidy property overrides logic
+- cbad48a: Added configuration options and error handling to the Oauth flows
+- fbc1a80: Update dependencies including OpenAPI Generator Plus
+
 ## 0.0.7
 
 ### Patch Changes
