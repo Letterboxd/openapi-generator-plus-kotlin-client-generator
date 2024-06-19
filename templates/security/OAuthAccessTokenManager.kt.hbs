@@ -7,14 +7,12 @@ package {{securityPackage}}
 import {{{supportPackage}}}.APIException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.header
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.parameters
-import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,7 +23,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
-import kotlinx.serialization.json.Json
 import java.net.URL
 import kotlin.time.Duration
 
@@ -37,18 +34,15 @@ class OAuthAccessTokenManager(
     private val clientSecret: String,
     private val refreshTokenURL: URL?,
     private val preemptiveAccessTokenRefresh: Duration? = null,
-    private val accessTokenDidChange: AccessTokenHandler? = null
+    private val accessTokenDidChange: AccessTokenHandler? = null,
+    private val authClient: HttpClient
 ) {
 
     private val mutex = Mutex()
-    private val scope = CoroutineScope(Dispatchers.IO)
-    private val authClient = HttpClient(OkHttp) {
-        install(ContentNegotiation) {
-            json(Json {
-                encodeDefaults = false
-            })
-        }
+    private val handler = CoroutineExceptionHandler { _, exception ->
+        println("OAuthAccessTokenManager: An error occurred: $exception")
     }
+    private val scope = CoroutineScope(Dispatchers.IO + handler)
 
     private var waitingForRefresh: Job? = null
     internal var accessToken: OAuthAccessToken? = null

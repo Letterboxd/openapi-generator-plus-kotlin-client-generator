@@ -4,6 +4,8 @@
 
 package {{securityPackage}}
 
+import {{{supportPackage}}}.HttpClientConfigurator
+
 /** A client for the OAuth 2.0 Authorization Code Flow */
 class OAuthAuthorizationCodeFlowClient(
     clientId: String,
@@ -12,13 +14,16 @@ class OAuthAuthorizationCodeFlowClient(
     private val tokenURL: java.net.URL,
     private val authorizationURL: java.net.URL,
     autoRefreshInterval: kotlin.time.Duration? = null,
-    accessTokenDidChange: AccessTokenHandler? = null
+    accessTokenDidChange: AccessTokenHandler? = null,
+    /** A block that allows you to further configure the HTTP client. */
+    httpClientConfig: HttpClientConfigurator? = null,
 ) : AbstractOAuthFlowClient(
     clientId,
     clientSecret,
     refreshURL,
     autoRefreshInterval,
-    accessTokenDidChange
+    accessTokenDidChange,
+    httpClientConfig
 ) {
     // TODO: Implement the authorization code client
     // Provide a function to create a URL for the authorize request, including requested scopes, that the developer can use to open a web view

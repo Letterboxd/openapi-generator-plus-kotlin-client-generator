@@ -4,6 +4,7 @@
 
 package {{securityPackage}}
 
+import {{{supportPackage}}}.HttpClientConfigurator
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -18,11 +19,15 @@ abstract class AbstractOAuthFlowClient(
     val clientSecret: String,
     refreshURL: URL?,
     autoRefreshInterval: Duration? = null,
-    accessTokenDidChange: AccessTokenHandler?
+    accessTokenDidChange: AccessTokenHandler?,
+    /** A block that allows you to further configure the HTTP client. */
+    httpClientConfig: HttpClientConfigurator?,
 ) : SecurityClient {
 
     protected val tokenManager: OAuthAccessTokenManager
     protected val client = HttpClient(OkHttp) {
+        httpClientConfig?.invoke(this)
+
         install(ContentNegotiation) {
             json(Json {
                 encodeDefaults = false
@@ -40,7 +45,7 @@ abstract class AbstractOAuthFlowClient(
 
     init {
         tokenManager = OAuthAccessTokenManager(
-            clientId, clientSecret, refreshURL, autoRefreshInterval, accessTokenDidChange
+            clientId, clientSecret, refreshURL, autoRefreshInterval, accessTokenDidChange, client
         )
     }
 
