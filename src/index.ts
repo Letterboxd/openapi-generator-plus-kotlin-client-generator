@@ -410,7 +410,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 		toSuggestedSchemaName: (name, options) => {
 			if (options.schemaType === CodegenSchemaType.ENUM) {
 				name = `${name}`
-			} else if (options.purpose === CodegenSchemaPurpose.EXTRACTED_INTERFACE) {
+			} else if (options.purpose === CodegenSchemaPurpose.INTERFACE) {
 				name = `i_${name}`
 			} else if (options.purpose === CodegenSchemaPurpose.ABSTRACT_IMPLEMENTATION) {
 				name = `abstract_${name}`
@@ -658,7 +658,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				/* oneOf schemas turn into an enum, so each member needs a `name` for our enum */
 				for (const comp of schema.composes) {
 					if (comp.name === null) {
-						comp.name = helper.uniqueName(suggestedNameForType(comp.nativeType), helper.scopeOf(schema), comp.schemaType)
+						comp.name = helper.uniqueName(suggestedNameForType(comp.nativeType), helper.scopeOf(schema), comp.schemaType, comp.purpose)
 					}
 				}
 			}
