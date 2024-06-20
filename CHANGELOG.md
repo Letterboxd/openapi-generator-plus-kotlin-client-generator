@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.9
+
+### Patch Changes
+
+- a7e9f22: Wrap security clients with runCatching for consistency in handling errors
+
 ## 0.0.8
 
 ### Patch Changes
