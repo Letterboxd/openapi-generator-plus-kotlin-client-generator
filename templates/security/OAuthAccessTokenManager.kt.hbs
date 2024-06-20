@@ -81,15 +81,19 @@ class OAuthAccessTokenManager(
 
                 val preEmptiveRequestInstant = Clock.System.now()
 
-                val response = authClient.submitForm(
-                    url = refreshTokenURL.toString(),
-                    formParameters = parameters {
-                        append("grant_type", "refresh_token")
-                        append("refresh_token", refreshToken)
-                        append("client_id", clientId)
-                        append("client_secret", clientSecret)
-                    }
-                )
+                val response = runCatching {
+                    authClient.submitForm(
+                        url = refreshTokenURL.toString(),
+                        formParameters = parameters {
+                            append("grant_type", "refresh_token")
+                            append("refresh_token", refreshToken)
+                            append("client_id", clientId)
+                            append("client_secret", clientSecret)
+                        }
+                    )
+                }.getOrElse {
+                    return@withContext Result.failure(it)
+                }
 
                 return@withContext when (response.status) {
                     HttpStatusCode.OK -> {
