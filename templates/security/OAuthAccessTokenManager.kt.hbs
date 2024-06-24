@@ -107,9 +107,10 @@ class OAuthAccessTokenManager(
                         Result.success(Unit)
                     }
 
-                    HttpStatusCode.Unauthorized -> {
+                    // Response code is in 400s range.
+                    in HttpStatusCode.BadRequest ..< HttpStatusCode.InternalServerError -> {
                         this@OAuthAccessTokenManager.accessToken = null
-                        Result.failure(APIException.AuthenticationFailed(response))
+                        Result.failure(APIException.InvalidRefreshToken(response))
                     }
 
                     else -> Result.failure(APIException.AuthenticationFailed(response))
