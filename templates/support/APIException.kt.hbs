@@ -12,9 +12,6 @@ sealed class APIException(message: String) : Exception(message) {
     }
 
     /** The authentication request failed */
-    data class InvalidRefreshToken(val response: io.ktor.client.statement.HttpResponse) : APIException("Invalid refresh token: ${response.status}")
-
-    /** The authentication request failed */
     data class AuthenticationFailed(val response: io.ktor.client.statement.HttpResponse) : APIException("Authentication Failed: ${response.status}")
 
     /** A response was received that could not be decoded */
