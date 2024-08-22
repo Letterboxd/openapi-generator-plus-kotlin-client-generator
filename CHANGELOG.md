@@ -1,5 +1,12 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.10
+
+### Patch Changes
+
+- 5e5ede7: Generate interfaces for request parameters that are implemented by generated data classes to allow for custom request objects
+- 2159e31: Use authenticationFailed to indicate token failure and unexpectedResponse to indicate that a retry might be possible
+
 ## 0.0.9
 
 ### Patch Changes
