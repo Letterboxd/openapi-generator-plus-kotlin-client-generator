@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.11
+
+### Patch Changes
+
+- 9b20c8e: Fix serializability of URLs, UUIDs and introduce support for Any
+
 ## 0.0.10
 
 ### Patch Changes
