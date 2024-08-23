@@ -336,14 +336,20 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				case CodegenSchemaType.STRING: {
 					if (format === 'byte') {
 						/* base64 encoded characters */
-						return new context.NativeType('String')
+						return new context.NativeType('kotlin.String')
 					} else if (format === 'uuid') {
 						return new context.NativeType('java.util.UUID', {
 							serializedType: 'String',
+							info: {
+								serialized: `@kotlinx.serialization.Serializable(with = ${generatorOptions.supportPackage}.KUUIDSerializer::class) java.util.UUID`,
+							}
 						})
 					} else if (format === 'url') {
 						return new context.NativeType('java.net.URL', {
 							serializedType: 'String',
+							info: {
+								serialized: `@kotlinx.serialization.Serializable(with = ${generatorOptions.supportPackage}.KURLSerializer::class) java.net.URL`,
+							}
 						})
 					} else {
 						return new context.NativeType('kotlin.String')
@@ -355,6 +361,13 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				case CodegenSchemaType.BINARY:
 				case CodegenSchemaType.FILE: {
 					return new context.NativeType(generatorOptions.binaryRepresentation)
+				}
+				case CodegenSchemaType.ANY: {
+					return new context.NativeType('kotlin.Any', {
+						info: {
+							serialized: '@kotlinx.serialization.Contextual kotlin.Any',
+						}
+					})
 				}
 			}
 	
@@ -375,12 +388,42 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					default: (nativeType) => `kotlin.collections.Set<${(nativeType.componentType || nativeType).nativeType}>`,
 					literalType: () => 'kotlin.collections.Set',
 					concreteType: (nativeType) => `kotlin.collections.Set<${(nativeType.componentType || nativeType).nativeType}>`,
+					info: function(nativeType) {
+						if (nativeType.componentType && nativeType.componentType.info && nativeType.componentType.info.serialized) {
+							return {
+								...nativeType.info,
+								serialized: `kotlin.collections.Set<${nativeType.componentType.info.serialized}>`,
+							}
+						} else if (nativeType.info && nativeType.info.serialized) {
+							return {
+								...nativeType.info,
+								serialized: `kotlin.collections.Set<${nativeType.info.serialized}>`,
+							}
+						}
+						
+						return nativeType.info
+					}
 				})
 			} else {
 				return new context.TransformingNativeType(componentNativeType, {
 					default: (nativeType) => `kotlin.collections.List<${(nativeType.componentType || nativeType).nativeType}>`,
 					literalType: () => 'kotlin.collections.List',
 					concreteType: (nativeType) => `kotlin.collections.List<${(nativeType.componentType || nativeType).nativeType}>`,
+					info: function(nativeType) {
+						if (nativeType.componentType && nativeType.componentType.info && nativeType.componentType.info.serialized) {
+							return {
+								...nativeType.info,
+								serialized: `kotlin.collections.List<${nativeType.componentType.info.serialized}>`,
+							}
+						} else if (nativeType.info && nativeType.info.serialized) {
+							return {
+								...nativeType.info,
+								serialized: `kotlin.collections.List<${nativeType.info.serialized}>`,
+							}
+						}
+						
+						return nativeType.info
+					}
 				})
 			}
 		},
@@ -390,6 +433,15 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				default: ([keyNativeType, componentNativeType]) => `kotlin.collections.Map<${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}>`,
 				literalType: () => 'kotlin.collections.Map',
 				concreteType: ([keyNativeType, componentNativeType]) => `kotlin.collections.Map<${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}>`,
+				info: function ([keyNativeType, componentNativeType], defaultComposer) {
+					const actualKeyNativeType = keyNativeType.componentType || keyNativeType
+					const actualComponentNativeType = componentNativeType.componentType || componentNativeType
+
+					return {
+						...defaultComposer([keyNativeType, componentNativeType]),
+						serialized: `kotlin.collections.Map<${actualKeyNativeType.info?.serialized || actualKeyNativeType.nativeType}, ${actualComponentNativeType.info?.serialized || actualComponentNativeType.nativeType}>`,
+					}
+				}
 			})
 		},
 		nativeTypeUsageTransformer: ({ nullable, required }) => ({
@@ -406,6 +458,25 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			/* We don't transform the concrete type as the concrete type is never null; we use it to make new objects */
 			concreteType: null,
 			parentType: null,
+			info: function(nativeType) {
+				if (nativeType.info && nativeType.info.serialized) {
+					let nativeTypeString = nativeType.info.serialized as string
+
+					if (nullable) {
+						nativeTypeString = `${generatorOptions.supportPackage}.Nullable<${toSafeTypeForComposing(nativeTypeString)}>`
+					}
+					if (!required) {
+						nativeTypeString = `${toSafeTypeForComposing(nativeTypeString)}?`
+					}
+					
+					return {
+						...nativeType.info,
+						serialized: nativeTypeString,
+					}
+				}
+
+				return nativeType.info
+			},
 		}),
 		toSuggestedSchemaName: (name, options) => {
 			if (options.schemaType === CodegenSchemaType.ENUM) {

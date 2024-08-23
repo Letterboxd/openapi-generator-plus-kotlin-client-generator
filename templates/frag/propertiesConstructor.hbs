@@ -8,17 +8,11 @@
 @kotlin.Deprecated(message = "This property is deprecated.")
 {{/if}}
 @kotlinx.serialization.SerialName(value = "{{{serializedName}}}")
-{{#ifeq schema.nativeType.concreteType 'java.net.URL'}}
-@kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KURLSerializer::class)
-{{/ifeq}}
-{{#ifeq schema.nativeType.concreteType 'java.util.UUID'}}
-@kotlinx.serialization.Serializable(with = {{{@root.supportPackage}}}.KUUIDSerializer::class)
-{{/ifeq}}
 {{#join "_parameter" ""}}
 {{#if overrides}}
 override 
 {{/if}}
-val {{{name}}}: {{{nativeType}}}
+val {{{name}}}: {{#if nativeType.info.serialized}}{{{nativeType.info.serialized}}}{{else}}{{{nativeType}}}{{/if}}
 {{#unless required}}
  = 
 {{#if initialValue}}
