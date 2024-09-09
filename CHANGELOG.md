@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.0.12
+
+### Patch Changes
+
+- 5023101: Update to latest core
+
 ## 0.0.11
 
 ### Patch Changes
