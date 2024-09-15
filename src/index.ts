@@ -1,6 +1,6 @@
 import { commonGenerator, configBoolean, configObject, configString, debugStringify } from '@openapi-generator-plus/generator-common'
 import { emit, loadTemplates, registerStandardHelpers } from '@openapi-generator-plus/handlebars-templates'
-import { ConstantStyle, JavaLikeContext, javaLikeGenerator, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
+import { ConstantStyle, EnumMemberStyle, JavaLikeContext, javaLikeGenerator, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
 import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenNativeType, CodegenOneOfStrategy, CodegenSchemaPurpose, CodegenSchemaType, isCodegenEnumSchema, isCodegenHierarchySchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
 import Handlebars from 'handlebars'
 import path from 'path'
@@ -139,6 +139,7 @@ function createJavaLikeContext(context: KotlinGeneratorContext): JavaLikeContext
 		...context,
 		reservedWords: () => RESERVED_WORDS,
 		defaultConstantStyle: ConstantStyle.pascalCase,
+		defaultEnumMemberStyle: EnumMemberStyle.constant,
 	}
 	return javaLikeContext
 }
