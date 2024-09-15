@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.1.0
+
+### Minor Changes
+
+- 93c1cd8: Update core including toEnumMemberName change
+
 ## 0.0.12
 
 ### Patch Changes
