@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.1.1
+
+### Patch Changes
+
+- 6188874: Fix parameter naming not matching the actual name from the spec
+
 ## 0.1.0
 
 ### Minor Changes
