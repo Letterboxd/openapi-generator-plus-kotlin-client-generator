@@ -2,12 +2,12 @@
 url {
     {{#each queryParams}}
     {{#ifeq schema.schemaType "ARRAY"}}
-    {{{name}}}{{#unless required}}?{{/unless}}.forEach { parameters.append("{{{name}}}", "$it") }
+    {{{name}}}{{#unless required}}?{{/unless}}.forEach { parameters.append("{{{serializedName}}}", "$it") }
     {{else}}
     {{#if required}}
-    parameters.append("{{{name}}}", "${{{name}}}")
+    parameters.append("{{{serializedName}}}", "${{{name}}}")
     {{else}}
-    {{{name}}}?.let { parameters.append("{{{name}}}", "$it") }
+    {{{name}}}?.let { parameters.append("{{{serializedName}}}", "$it") }
     {{/if}}
     {{/ifeq}}
     {{/each}}
