@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.1.2
+
+### Patch Changes
+
+- a00552b: update interface to sealed interface
+
 ## 0.1.1
 
 ### Patch Changes
