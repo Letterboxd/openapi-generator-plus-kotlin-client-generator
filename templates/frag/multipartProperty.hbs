@@ -19,9 +19,9 @@ if let value = {{{propertyVar}}}.value { // nullable
 {{{propertyVar}}}{{#if valueProperty}}.{{identifier valueProperty.name}}{{/if}}
 {{/set}}
 {{#ifeq contentType 'application/json'}}
-{{{bodyPartsVar}}}.append({{{stringLiteral property.serializedName}}}, try JSONEncoder().encode({{{_valueProperty}}}), {{{stringLiteral contentType}}}, nil)
+{{{bodyPartsVar}}}.append({{{stringLiteral property.serializedName}}}, try JSONEncoder().encode({{{_valueProperty}}}), {{{stringLiteral contentType}}}, null)
 {{else ifeq contentType 'application/octet-stream'}}
-{{{bodyPartsVar}}}.append({{{stringLiteral property.serializedName}}}, {{{_valueProperty}}}, {{{stringLiteral contentType}}}{{#if filenameProperty}}, {{{propertyVar}}}.{{{filenameProperty.name}}}{{else}}, nil{{/if}})
+{{{bodyPartsVar}}}.append({{{stringLiteral property.serializedName}}}, {{{_valueProperty}}}, {{{stringLiteral contentType}}}{{#if filenameProperty}}, {{{propertyVar}}}.{{{filenameProperty.name}}}{{else}}, null{{/if}})
 {{else}}
 {{{bodyPartsVar}}}.append({{{stringLiteral property.serializedName}}}, String({{{_valueProperty}}}), {{{stringLiteral contentType}}})
 {{/ifeq}}

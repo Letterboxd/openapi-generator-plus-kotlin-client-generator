@@ -6,7 +6,7 @@
 --}}
 {{#indent indent}}
 {{#if nullable}}
-({{{value}}}.value != nil ?{{{safe ' '}}}
+({{{value}}}.value != null ?{{{safe ' '}}}
 {{~#set '_suffix'}}
 .value!
 {{/set}}

@@ -29,7 +29,7 @@ open class {{name}}Api(
         } else {
 {{#each @root.servers}}
 {{#if @first}}
-            self.basePath = {{{stringLiteral url}}}.replacingOccurrences(of: "/", with: "", options: [.anchored, .backwards], range: nil)
+            self.basePath = {{{stringLiteral url}}}.replacingOccurrences(of: "/", with: "", options: [.anchored, .backwards], range: null)
 {{/if}}
 {{/each}}
 {{#unless @root.servers}}
