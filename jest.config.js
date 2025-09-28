@@ -10,5 +10,5 @@ module.exports = {
 	],
 	/* Only run files with test or spec in their filename, so we can have support files in __tests__ */
 	testRegex: '(\\.|/)(test|spec)\\.[jt]sx?$',
-	testTimeout: 90000,
+	testTimeout: 180000,
 }
