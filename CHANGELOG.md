@@ -1,5 +1,12 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.1.3
+
+### Patch Changes
+
+- 154fd8b: replace nil with null
+- ce8835d: Upgrade dependencies including eslint 9 and updated linting rules
+
 ## 0.1.2
 
 ### Patch Changes
