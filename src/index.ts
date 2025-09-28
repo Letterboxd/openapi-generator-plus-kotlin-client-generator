@@ -343,14 +343,14 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 							serializedType: 'String',
 							info: {
 								serialized: `@kotlinx.serialization.Serializable(with = ${generatorOptions.supportPackage}.KUUIDSerializer::class) java.util.UUID`,
-							}
+							},
 						})
 					} else if (format === 'url') {
 						return new context.NativeType('java.net.URL', {
 							serializedType: 'String',
 							info: {
 								serialized: `@kotlinx.serialization.Serializable(with = ${generatorOptions.supportPackage}.KURLSerializer::class) java.net.URL`,
-							}
+							},
 						})
 					} else {
 						return new context.NativeType('kotlin.String')
@@ -367,7 +367,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					return new context.NativeType('kotlin.Any', {
 						info: {
 							serialized: '@kotlinx.serialization.Contextual kotlin.Any',
-						}
+						},
 					})
 				}
 			}
@@ -403,7 +403,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 						}
 						
 						return nativeType.info
-					}
+					},
 				})
 			} else {
 				return new context.TransformingNativeType(componentNativeType, {
@@ -424,7 +424,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 						}
 						
 						return nativeType.info
-					}
+					},
 				})
 			}
 		},
@@ -434,7 +434,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				default: ([keyNativeType, componentNativeType]) => `kotlin.collections.Map<${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}>`,
 				literalType: () => 'kotlin.collections.Map',
 				concreteType: ([keyNativeType, componentNativeType]) => `kotlin.collections.Map<${(keyNativeType.componentType || keyNativeType).nativeType}, ${(componentNativeType.componentType || componentNativeType).nativeType}>`,
-				info: function ([keyNativeType, componentNativeType], defaultComposer) {
+				info: function([keyNativeType, componentNativeType], defaultComposer) {
 					const actualKeyNativeType = keyNativeType.componentType || keyNativeType
 					const actualComponentNativeType = componentNativeType.componentType || componentNativeType
 
@@ -442,7 +442,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 						...defaultComposer([keyNativeType, componentNativeType]),
 						serialized: `kotlin.collections.Map<${actualKeyNativeType.info?.serialized || actualKeyNativeType.nativeType}, ${actualComponentNativeType.info?.serialized || actualComponentNativeType.nativeType}>`,
 					}
-				}
+				},
 			})
 		},
 		nativeTypeUsageTransformer: ({ nullable, required }) => ({
