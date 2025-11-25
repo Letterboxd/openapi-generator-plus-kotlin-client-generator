@@ -113,7 +113,7 @@ class OAuthAccessTokenManager(
                     }
 
                     // Response code is in 400 - s range.
-                    in HttpStatusCode.BadRequest .. HttpStatusCode.InternalServerError -> {
+                    in HttpStatusCode.BadRequest ..< HttpStatusCode.InternalServerError -> {
                         this@OAuthAccessTokenManager.accessToken = null
                         Result.failure(APIException.AuthenticationFailed(response))
                     }
