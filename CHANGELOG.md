@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.1.4
+
+### Patch Changes
+
+- 70fd5d9: exclude status code 500 from being handled as an expectable auth failure
+
 ## 0.1.3
 
 ### Patch Changes
