@@ -8,10 +8,10 @@ package {{supportPackage}}
 @kotlinx.serialization.Serializable(with = Instant.Serializer::class)
 data class Instant(val value: String){{#if @root.isJavaSerializable}} : java.io.Serializable{{/if}} {
 
-    constructor(value: kotlinx.datetime.Instant): this(value.toString())
+    constructor(value: kotlin.time.Instant): this(value.toString())
 
-    val kInstant: kotlinx.datetime.Instant
-        get() = kotlinx.datetime.Instant.parse(value)
+    val kInstant: kotlin.time.Instant
+        get() = kotlin.time.Instant.parse(value)
 
     override fun toString(): String = value
 
