@@ -1,5 +1,15 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.2.0
+
+### Minor Changes
+
+- fe6de67: Replace `kotlinx.datetime.Clock` and `kotlinx.datetime.Instant` with their `kotlin.time.\*` replacements.
+
+### Patch Changes
+
+- ce93078: Update dependency versions.
+
 ## 0.1.4
 
 ### Patch Changes
