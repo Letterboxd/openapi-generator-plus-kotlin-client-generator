@@ -1,5 +1,5 @@
 ---
-"@openapi-generator-plus/kotlin-client-generator": patch
+"@openapi-generator-plus/kotlin-client-generator": minor
 ---
 
-replace kotlinx.datetime.Clock and kotlinx.datetime.Instant to their kotlin.time.\* replacements
+Replace `kotlinx.datetime.Clock` and `kotlinx.datetime.Instant` with their `kotlin.time.\*` replacements.

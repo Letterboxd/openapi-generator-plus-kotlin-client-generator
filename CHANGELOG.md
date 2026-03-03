@@ -4,20 +4,20 @@
 
 ### Patch Changes
 
-- 70fd5d9: exclude status code 500 from being handled as an expectable auth failure
+- 70fd5d9: Exclude status code 500 from being treated as an expected auth failure
 
 ## 0.1.3
 
 ### Patch Changes
 
-- 154fd8b: replace nil with null
+- 154fd8b: Replace `nil` with `null`
 - ce8835d: Upgrade dependencies including eslint 9 and updated linting rules
 
 ## 0.1.2
 
 ### Patch Changes
 
-- a00552b: update interface to sealed interface
+- a00552b: Update interface to sealed interface
 
 ## 0.1.1
 
