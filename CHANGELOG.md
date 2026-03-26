@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.2.1
+
+### Patch Changes
+
+- 3cb3feb: Fix bad release missing code!
+
 ## 0.2.0
 
 ### Minor Changes
