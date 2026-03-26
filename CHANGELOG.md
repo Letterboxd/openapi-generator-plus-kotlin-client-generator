@@ -1,5 +1,11 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.2.2
+
+### Patch Changes
+
+- 8c9eb28: Upgrade dependencies and node version
+
 ## 0.2.1
 
 ### Patch Changes
