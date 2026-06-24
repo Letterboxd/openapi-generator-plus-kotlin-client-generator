@@ -1,0 +1,23 @@
+openapi: 3.0.0
+info:
+  title: URL format test
+  version: 1.0.0
+paths:
+  /thing:
+    get:
+      operationId: getThing
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        website:
+          type: string
+          format: url
