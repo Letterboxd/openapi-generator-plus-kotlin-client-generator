@@ -110,7 +110,11 @@ dependencies {
 }
 ```
 
-> **Note:** the `android.library` and `kotlin.jvm` plugins are mutually exclusive, which is why `kotlin.jvm` is removed when `android` is present. You'll likely also need the Kotlin Android plugin and the relevant version-catalog entries (`libs.plugins.android.library`, `libs.versions.android.compileSdk`, etc.) defined in your project; add any further plugins via [`gradle.plugins`](#gradle).
+> **Note:** the `android` option requires `gradle` to also be configured (the Android configuration is written into the generated `build.gradle.kts`); the generator throws if `android` is set without `gradle`.
+>
+> The `android.library` and `kotlin.jvm` plugins are mutually exclusive, which is why `kotlin.jvm` is removed when `android` is present. An Android library module also needs the **Kotlin Android plugin** (`org.jetbrains.kotlin.android`) applied for its Kotlin sources to compile — add it via [`gradle.plugins`](#gradle), e.g. `alias(libs.plugins.kotlin.android)`.
+>
+> The generated `build.gradle.kts` references version-catalog aliases such as `libs.plugins.android.library` and `libs.versions.android.compileSdk`. These are **not** declared in the generator's default `gradle/libs.versions.toml`, so you must define them yourself. We recommend managing all versions, libraries, and plugins through a [Gradle version catalog](https://docs.gradle.org/current/userguide/version_catalogs.html) (`gradle/libs.versions.toml`) in your project — this keeps versions consistent across the generated module and the rest of your build, and lets the generated references (`libs.plugins.*` / `libs.versions.*`) resolve.
 
 ## Development
 

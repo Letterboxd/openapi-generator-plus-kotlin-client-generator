@@ -109,6 +109,12 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 
 	const android = configObject(config, 'android', undefined)
 
+	/* The Android library configuration is written into the generated `build.gradle.kts`, which is
+	   only emitted when `gradle` is configured. Fail fast rather than silently ignoring `android`. */
+	if (android && !gradle) {
+		throw new Error('The "android" option requires the "gradle" option to be set, as the Android library configuration is written to the generated build.gradle.kts')
+	}
+
 	/* `urlImplementation` may be given either as a string (the Kotlin type, constructed via `Type(string)`)
 	   or as an object `{ type, fromString }` for types that aren't constructed directly from a String,
 	   e.g. `android.net.Uri` which uses `android.net.Uri.parse(string)`. */
