@@ -1,4 +1,4 @@
-import { commonGenerator, configBoolean, configObject, configString, debugStringify } from '@openapi-generator-plus/generator-common'
+import { commonGenerator, configBoolean, configObject, configString, configStringArray, debugStringify } from '@openapi-generator-plus/generator-common'
 import { emit, loadTemplates, registerStandardHelpers } from '@openapi-generator-plus/handlebars-templates'
 import { ConstantStyle, EnumMemberStyle, JavaLikeContext, javaLikeGenerator, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
 import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenNativeType, CodegenOneOfStrategy, CodegenSchemaPurpose, CodegenSchemaType, isCodegenEnumSchema, isCodegenHierarchySchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
@@ -105,6 +105,23 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 	const customTemplates = configString(config, 'customTemplates', undefined)
 
 	const gradle = configObject(config, 'gradle', undefined)
+	const groupId = gradle ? configString(gradle, 'groupId', 'com.example', 'gradle.') : 'com.example'
+
+	const android = configObject(config, 'android', undefined)
+
+	/* `urlImplementation` may be given either as a string (the Kotlin type, constructed via `Type(string)`)
+	   or as an object `{ type, fromString }` for types that aren't constructed directly from a String,
+	   e.g. `android.net.Uri` which uses `android.net.Uri.parse(string)`. */
+	const urlImplementationConfig = config['urlImplementation']
+	const urlImplementationObject = (urlImplementationConfig !== null && typeof urlImplementationConfig === 'object')
+		? configObject(config, 'urlImplementation', undefined)
+		: undefined
+	const urlImplementation = urlImplementationObject
+		? configString(urlImplementationObject, 'type', 'java.net.URL', 'urlImplementation.')
+		: configString(config, 'urlImplementation', 'java.net.URL')
+	const urlFromString = urlImplementationObject
+		? configString(urlImplementationObject, 'fromString', urlImplementation, 'urlImplementation.')
+		: urlImplementation
 
 	const options: CodegenOptionsKotlin = {
 		...javaLikeOptions(config, createJavaLikeContext(context)),
@@ -120,12 +137,27 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		dateTimeImplementation: configString(config, 'dateTimeImplementation', `${supportPackage}.Instant`),
 		binaryRepresentation: configString(config, 'binaryRepresentation', 'kotlin.ByteArray'),
 
+		urlImplementation,
+		urlFromString,
+
 		isJavaSerializable: configBoolean(config, 'isJavaSerializable', true),
 
 		gradle: gradle ? {
-			groupId: configString(gradle, 'groupId', 'com.example', 'gradle.'),
+			groupId,
 			version: configString(gradle, 'version', '0.0.1', 'gradle.'),
 			versions: configObject(gradle, 'versions', {}, 'gradle.'),
+			plugins: configStringArray(gradle, 'plugins', [], 'gradle.'),
+			dependencies: configStringArray(gradle, 'dependencies', [], 'gradle.'),
+		} : null,
+
+		android: android ? {
+			plugin: configString(android, 'plugin', 'alias(libs.plugins.android.library)', 'android.'),
+			/* `compileSdk` may be a literal API level (`36`) or a Kotlin expression
+			   (`libs.versions.android.compileSdk.get().toInt()`); either is emitted verbatim. */
+			compileSdk: typeof android['compileSdk'] === 'number'
+				? String(android['compileSdk'])
+				: configString(android, 'compileSdk', '35', 'android.'),
+			namespace: configString(android, 'namespace', groupId, 'android.'),
 		} : null,
 
 		relativeSourceOutputPath: computeRelativeSourceOutputPath(config),
@@ -346,10 +378,10 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 							},
 						})
 					} else if (format === 'url') {
-						return new context.NativeType('java.net.URL', {
+						return new context.NativeType(generatorOptions.urlImplementation, {
 							serializedType: 'String',
 							info: {
-								serialized: `@kotlinx.serialization.Serializable(with = ${generatorOptions.supportPackage}.KURLSerializer::class) java.net.URL`,
+								serialized: `@kotlinx.serialization.Serializable(with = ${generatorOptions.supportPackage}.KURLSerializer::class) ${generatorOptions.urlImplementation}`,
 							},
 						})
 					} else {
@@ -692,7 +724,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 	
 			const gradle = generatorOptions.gradle
 			if (gradle) {
-				await emit('build.gradle.kts', path.join(outputPath, 'build.gradle.kts'), { ...rootContext, ...gradle }, false, hbs)
+				await emit('build.gradle.kts', path.join(outputPath, 'build.gradle.kts'), { ...rootContext, ...gradle }, true, hbs)
 				await emit('settings.gradle.kts', path.join(outputPath, 'settings.gradle.kts'), { ...rootContext, ...gradle }, false, hbs)
 				await emit('libs.versions.toml', path.join(outputPath, 'gradle', 'libs.versions.toml'), { ...rootContext, ...gradle }, false, hbs)
 			}

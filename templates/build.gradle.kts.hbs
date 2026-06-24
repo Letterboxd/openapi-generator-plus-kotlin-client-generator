@@ -1,14 +1,33 @@
-/* 
+/*
  * {{>frag/generatedBy}}
  */
+{{#if android}}
+
+import com.android.build.api.dsl.LibraryExtension
+{{/if}}
 
 plugins {
+{{#if android}}
+    {{{android.plugin}}}
+{{else}}
     alias(libs.plugins.kotlin.jvm)
+{{/if}}
     alias(libs.plugins.kotlin.serialization)
+{{#each plugins}}
+    {{{this}}}
+{{/each}}
 }
 
 group = "{{{groupId}}}"
 version = "{{{version}}}"
+{{#if android}}
+
+
+configure<LibraryExtension> {
+    namespace = "{{{android.namespace}}}"
+    compileSdk = {{{android.compileSdk}}}
+}
+{{/if}}
 
 dependencies {
     api(libs.ktor.client.core)
@@ -17,4 +36,7 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
+{{#each dependencies}}
+    {{{this}}}
+{{/each}}
 }
