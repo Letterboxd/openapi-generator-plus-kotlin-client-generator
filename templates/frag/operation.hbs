@@ -67,8 +67,8 @@ sealed class {{{_resultClassName}}} {
 {{/if}}
 {{#if requestBody.nativeType}}
 {{/if}}
-open suspend fun {{{name}}}(queryParams: I{{{className _requestName}}}{{#if requestBody.nativeType}}, requestBody: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = null{{/unless}}{{/if}}): Result<{{{_resultClassName}}}> {
-    return {{{name}}}({{{_requestCallParams}}}{{#if _params}}, {{/if}}allowsReauth = true)
+open suspend fun {{{name}}}(queryParams: I{{{className _requestName}}}{{#if requestBody.nativeType}}, requestBody: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = null{{/unless}}{{/if}}, modifyRequest: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {}): Result<{{{_resultClassName}}}> {
+    return {{{name}}}({{{_requestCallParams}}}{{#if _params}}, {{/if}}allowsReauth = true, modifyRequest = modifyRequest)
 }
 
 {{/if}}
@@ -76,7 +76,7 @@ open suspend fun {{{name}}}(queryParams: I{{{className _requestName}}}{{#if requ
 {{#if deprecated}}
 @kotlin.Deprecated(message = "This function is deprecated.")
 {{/if}}
-open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: kotlin.Boolean = true): Result<{{{_resultClassName}}}> {
+open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: kotlin.Boolean = true, modifyRequest: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {}): Result<{{{_resultClassName}}}> {
     return withContext(Dispatchers.IO) {
         val path = "{{{stripLeadingSlash _fullPath}}}"
         {{#if pathParams}}
@@ -84,14 +84,8 @@ open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: k
             .replace("{{safe '{'}}{{{serializedName}}}{{safe '}'}}", "${{identifier name}}")
         {{/each}}
         {{/if}}
-        {{#join '_requestConfiguration' ''}}
-        {{#if queryParams}}.{{/if}}
-        {{#if requestBody.nativeType}}.{{/if}}
-        {{#if securityRequirements}}.{{/if}}
-        {{/join}}
         try {
-            val response = client.{{{lowerCase httpMethod}}}(path){{#if _requestConfiguration}} {
-
+            val response = client.{{{lowerCase httpMethod}}}(path) {
                 {{#if queryParams}}
                 {{>frag/requestParameter}}
 
@@ -100,12 +94,12 @@ open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: k
                 {{>frag/requestBody}}
 
                 {{/if}}
+                modifyRequest()
                 {{#if securityRequirements}}
-                {{>frag/requestAuthentication}}
 
+                {{>frag/requestAuthentication}}
                 {{/if}}
             }
-            {{/if}}
 
             return@withContext when (response.status) {
             {{#if securityRequirements}}
@@ -145,7 +139,7 @@ open suspend fun {{{name}}}({{{_params}}}{{#if _params}}, {{/if}}allowsReauth: k
                     }
                     {{/unless}}
                     
-                    return@withContext {{{name}}}({{{_callParams}}}{{#if _params}}, {{/if}}allowsReauth = false)
+                    return@withContext {{{name}}}({{{_callParams}}}{{#if _params}}, {{/if}}allowsReauth = false, modifyRequest = modifyRequest)
                 }
 
             {{/if}}
