@@ -1,7 +1,7 @@
 import { commonGenerator, configBoolean, configObject, configString, configStringArray, debugStringify } from '@openapi-generator-plus/generator-common'
 import { emit, loadTemplates, registerStandardHelpers } from '@openapi-generator-plus/handlebars-templates'
 import { ConstantStyle, EnumMemberStyle, JavaLikeContext, javaLikeGenerator, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
-import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenNativeType, CodegenOneOfStrategy, CodegenSchemaPurpose, CodegenSchemaType, isCodegenEnumSchema, isCodegenHierarchySchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
+import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenNativeType, CodegenOneOfStrategy, CodegenParameter, CodegenSchema, CodegenSchemaPurpose, CodegenSchemaType, isCodegenArraySchema, isCodegenEnumSchema, isCodegenHierarchySchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
 import Handlebars from 'handlebars'
 import path from 'path'
 import { CodegenOptionsKotlin } from './types'
@@ -682,6 +682,146 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				} else {
 					return text
 				}
+			})
+
+			/**
+			 * Returns a Kotlin expression that parses a `String` variable named [varName] into the type
+			 * described by [schema] (with the given native type). Mirrors the type mapping in `toNativeType`.
+			 * String-typed values are returned verbatim (the identity expression is just [varName]).
+			 */
+			function parseFromStringExpression(schema: CodegenSchema, nativeType: CodegenNativeType, varName: string): string {
+				switch (schema.schemaType) {
+					case CodegenSchemaType.ENUM:
+						return `${nativeType.concreteType}.valueOf(${varName})`
+					case CodegenSchemaType.STRING:
+						if (schema.format === 'uuid') {
+							return `java.util.UUID.fromString(${varName})`
+						} else if (schema.format === 'url') {
+							return `${generatorOptions.urlFromString}(${varName})`
+						}
+						return varName
+					case CodegenSchemaType.INTEGER:
+						return schema.format === 'int64' ? `${varName}.toLong()` : `${varName}.toInt()`
+					case CodegenSchemaType.NUMBER:
+						return schema.format === 'float' ? `${varName}.toFloat()` : `${varName}.toDouble()`
+					case CodegenSchemaType.BOOLEAN:
+						return `${varName}.toBoolean()`
+					case CodegenSchemaType.DATE:
+						return `${generatorOptions.dateImplementation}(${varName})`
+					case CodegenSchemaType.TIME:
+						return `${generatorOptions.timeImplementation}(${varName})`
+					case CodegenSchemaType.DATETIME:
+						return `${generatorOptions.dateTimeImplementation}(${varName})`
+					default:
+					/* Fall back to treating the value as its raw String representation. */
+						return varName
+				}
+			}
+
+			/**
+			 * Whether values of the given schema type can be reconstructed from a `String`. Objects, maps and
+			 * compositions (allOf/anyOf/oneOf), binary and `Any` cannot, so they are excluded from `withQuery`.
+			 */
+			function isParseableFromString(schema: CodegenSchema): boolean {
+				switch (schema.schemaType) {
+					case CodegenSchemaType.STRING:
+					case CodegenSchemaType.ENUM:
+					case CodegenSchemaType.INTEGER:
+					case CodegenSchemaType.NUMBER:
+					case CodegenSchemaType.BOOLEAN:
+					case CodegenSchemaType.DATE:
+					case CodegenSchemaType.TIME:
+					case CodegenSchemaType.DATETIME:
+						return true
+					default:
+						return false
+				}
+			}
+
+			/** The scalar schema a query parameter carries: its array component schema, or the parameter's own schema. */
+			function queryParamValueSchema(param: CodegenParameter): CodegenSchema {
+				return isCodegenArraySchema(param.schema) ? param.schema.component.schema : param.schema
+			}
+
+			/** Whether a query parameter's value can be constructed from a string map (see {@link isParseableFromString}). */
+			function isQueryParamFromMap(param: CodegenParameter): boolean {
+				return param.isQueryParam && isParseableFromString(queryParamValueSchema(param))
+			}
+
+			/**
+			 * Returns a nullable Kotlin expression that reads a query parameter from a `Map<String, List<String>>`
+			 * named [mapVar] and parses it to the parameter's type, or `null` when the key is absent.
+			 */
+			function queryMapAccessExpression(param: CodegenParameter, mapVar: string): string {
+				const key = JSON.stringify(param.serializedName)
+				if (isCodegenArraySchema(param.schema)) {
+					const component = param.schema.component
+					const parse = parseFromStringExpression(component.schema, component.nativeType, 'it')
+					let expr = parse === 'it' ? `${mapVar}[${key}]` : `${mapVar}[${key}]?.map { ${parse} }`
+					if (param.schema.uniqueItems) {
+						expr += '?.toSet()'
+					}
+					return expr
+				}
+				const parse = parseFromStringExpression(param.schema, param.nativeType, 'it')
+				return parse === 'it'
+					? `${mapVar}[${key}]?.firstOrNull()`
+					: `${mapVar}[${key}]?.firstOrNull()?.let { ${parse} }`
+			}
+
+			/** Whether a query parameter can be overridden from a string map (see {@link isQueryParamFromMap}). */
+			hbs.registerHelper('isQueryParamFromMap', function(param: CodegenParameter) {
+				return isQueryParamFromMap(param)
+			})
+
+			/** Whether any of the given query parameters can be constructed from a string map. */
+			hbs.registerHelper('hasQueryParamFromMap', function(params: unknown) {
+				if (!params) {
+					return false
+				}
+				for (const param of context.utils.values(params as never)) {
+					if (isQueryParamFromMap(param as CodegenParameter)) {
+						return true
+					}
+				}
+				return false
+			})
+
+			/**
+			 * Whether any of the given query parameters is both map-constructable and required — i.e. whether the
+			 * map constructor can throw `IllegalArgumentException` for a missing required parameter.
+			 */
+			hbs.registerHelper('hasRequiredQueryParamFromMap', function(params: unknown) {
+				if (!params) {
+					return false
+				}
+				for (const param of context.utils.values(params as never)) {
+					if (isQueryParamFromMap(param as CodegenParameter) && (param as CodegenParameter).required) {
+						return true
+					}
+				}
+				return false
+			})
+
+			/**
+			 * Returns the right-hand side of a `copy()` argument that overrides a query parameter from a
+			 * `Map<String, List<String>>` named [mapVar], falling back to the current value when the key is absent.
+			 */
+			hbs.registerHelper('queryFromMap', function(param: CodegenParameter, mapVar: string) {
+				return `${queryMapAccessExpression(param, mapVar)} ?: this.${param.name}`
+			})
+
+			/**
+			 * Returns the value expression for a query parameter when constructing from a `Map<String, List<String>>`
+			 * named [mapVar]. Required parameters are wrapped in `requireNotNull`, which throws when the key is absent.
+			 */
+			hbs.registerHelper('queryFromMapConstruct', function(param: CodegenParameter, mapVar: string) {
+				const access = queryMapAccessExpression(param, mapVar)
+				if (param.required) {
+					const message = JSON.stringify(`Missing required query parameter "${param.serializedName}"`)
+					return `requireNotNull(${access}) { ${message} }`
+				}
+				return access
 			})
 
 			await loadTemplates(path.resolve(__dirname, '..', 'templates'), hbs)
