@@ -48,6 +48,9 @@ data class Configuration(
 
         install(ContentNegotiation) {
             json(Json {
+                // Tolerate additive API changes: unknown response keys are ignored
+                // rather than failing the whole response. May be overridden in jsonBuilder.
+                ignoreUnknownKeys = true
                 jsonBuilder?.invoke(this)
                 encodeDefaults = false
             })
