@@ -146,6 +146,7 @@ pnpm link --global @openapi-generator-plus/kotlin-client-generator
 - This library assumes JSON is used for model representation during network calls.
 - This library has a limitation in only supporting one-of discriminators of type string or an enum that is represented in string.
 - The generated model objects are not `java.io.Serializable`, because Kotlin date and time classes are not `java.io.Serializable`. If you want to put model objects into an `android.os.Bundle` or `android.os.Intent`, you need to serialize the model object first (such as to json).
+- The generated per-operation `…Params` class exposes `toQueryMap(): Map<String, List<String>>`, `withQuery(query: Map<String, List<String>>)`, and a secondary `constructor(…non-query args…, query: Map<String, List<String>>)` (which throws `IllegalArgumentException` if a required query parameter is absent from the map) for its query parameters. Only query parameters whose values are reconstructable from a string (primitives, enums, dates, UUIDs, and arrays of those) participate in the map; object-typed query parameters are passed as explicit constructor arguments and left unchanged by `withQuery`.
 
 ## Requirements
 - The library was developed with the latest version of Kotlin at the time of development (version 1.9.22), and so it utilises Kotlin language features that were introduced after version 1.9.0, such as `data object`. Therefore, it’s strongly recommended to use the latest version of Kotlin, if not, at least 1.9.22.

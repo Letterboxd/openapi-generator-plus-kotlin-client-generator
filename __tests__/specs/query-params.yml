@@ -1,0 +1,102 @@
+openapi: 3.0.0
+info:
+  title: Query params compile test
+  version: 1.0.0
+paths:
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: requiredIds
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: ids
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: categories
+          in: query
+          schema:
+            type: array
+            uniqueItems: true
+            items:
+              type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: score
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: ratio
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: active
+          in: query
+          schema:
+            type: boolean
+        - name: uuid
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: at
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/Status'
+        - name: X-Token
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+components:
+  schemas:
+    Status:
+      type: string
+      enum:
+        - available
+        - pending
+        - sold

@@ -19,11 +19,11 @@ requestBody = requestBody
 {{/if}}
 {{/join}}
 {{#join '_requestName' ''}}
-{{{name}}}QueryParams
+{{{name}}}Params
 {{/join}}
 {{#join '_requestCallParams' ', '}}
 {{#each parameters}}
-{{{name}}} = queryParams.{{{name}}}
+{{{name}}} = params.{{{name}}}
 {{/each}}
 {{#if requestBody.nativeType}}
 {{#with requestBody}}
@@ -59,7 +59,7 @@ sealed class {{{_resultClassName}}} {
 }
 
 {{#if (gt (count parameters) 1)}}
-{{>frag/parametersStruct queryParamsClassName=(className _requestName)}}
+{{>frag/parametersStruct paramsClassName=(className _requestName)}}
 
 {{>frag/operationDocumentation}}
 {{#if deprecated}}
@@ -67,7 +67,7 @@ sealed class {{{_resultClassName}}} {
 {{/if}}
 {{#if requestBody.nativeType}}
 {{/if}}
-open suspend fun {{{name}}}(queryParams: I{{{className _requestName}}}{{#if requestBody.nativeType}}, requestBody: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = null{{/unless}}{{/if}}): Result<{{{_resultClassName}}}> {
+open suspend fun {{{name}}}(params: I{{{className _requestName}}}{{#if requestBody.nativeType}}, requestBody: {{{requestBody.nativeType}}}{{#unless requestBody.required}} = null{{/unless}}{{/if}}): Result<{{{_resultClassName}}}> {
     return {{{name}}}({{{_requestCallParams}}}{{#if _params}}, {{/if}}allowsReauth = true)
 }
 

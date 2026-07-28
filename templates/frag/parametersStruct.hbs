@@ -1,13 +1,68 @@
-interface I{{{queryParamsClassName}}}{
+interface I{{{paramsClassName}}}{
 {{#each parameters}}
     {{>frag/propertyDocumentation}}
     val {{{name}}}: {{{nativeType}}}
 {{/each}}
+{{#if queryParams}}
+
+    /** The query parameters serialized as a `Map<String, List<String>>`, keyed by their API names. */
+    fun toQueryMap(): kotlin.collections.Map<kotlin.String, kotlin.collections.List<kotlin.String>>
+{{/if}}
 }
 
-data class {{{queryParamsClassName}}}(
+data class {{{paramsClassName}}}(
 {{#each parameters}}
     {{>frag/propertyDocumentation}}
     override val {{{name}}}: {{{nativeType}}}{{#unless required}} = {{{undefinedValueLiteral schema}}}{{/unless}},
 {{/each}}
-) : I{{{queryParamsClassName}}}
+) : I{{{paramsClassName}}}{{#if queryParams}} {
+{{#if (hasQueryParamFromMap queryParams)}}
+
+    /**
+     * Builds [{{{paramsClassName}}}] from the non-query arguments plus a [query] parameter map.
+{{#if (hasRequiredQueryParamFromMap queryParams)}}
+     * @throws IllegalArgumentException if a required query parameter is absent from [query].
+{{/if}}
+     */
+    constructor(
+        {{#each parameters}}
+        {{#unless (isQueryParamFromMap this)}}
+        {{{name}}}: {{{nativeType}}}{{#unless required}} = {{{undefinedValueLiteral schema}}}{{/unless}},
+        {{/unless}}
+        {{/each}}
+        query: kotlin.collections.Map<kotlin.String, kotlin.collections.List<kotlin.String>>,
+    ) : this(
+        {{#each parameters}}
+        {{{name}}} = {{#if (isQueryParamFromMap this)}}{{{queryFromMapConstruct this "query"}}}{{else}}{{{name}}}{{/if}},
+        {{/each}}
+    )
+{{/if}}
+
+    override fun toQueryMap(): kotlin.collections.Map<kotlin.String, kotlin.collections.List<kotlin.String>> {
+        val result = mutableMapOf<kotlin.String, MutableList<kotlin.String>>()
+        {{#each queryParams}}
+        {{#ifeq schema.schemaType "ARRAY"}}
+        {{{name}}}{{#unless required}}?{{/unless}}.forEach { result.getOrPut("{{{serializedName}}}") { mutableListOf() }.add("$it") }
+        {{else}}
+        {{#if required}}
+        result.getOrPut("{{{serializedName}}}") { mutableListOf() }.add("${{{name}}}")
+        {{else}}
+        {{{name}}}?.let { result.getOrPut("{{{serializedName}}}") { mutableListOf() }.add("$it") }
+        {{/if}}
+        {{/ifeq}}
+        {{/each}}
+        return result
+    }
+
+    /**
+     * Returns a copy of these parameters with the query parameters overridden by [query].
+     * Query keys absent from [query] keep their current value.
+     */
+    fun withQuery(query: kotlin.collections.Map<kotlin.String, kotlin.collections.List<kotlin.String>>): {{{paramsClassName}}} = copy(
+        {{#each queryParams}}
+        {{#if (isQueryParamFromMap this)}}
+        {{{name}}} = {{{queryFromMap this "query"}}},
+        {{/if}}
+        {{/each}}
+    )
+}{{/if}}
