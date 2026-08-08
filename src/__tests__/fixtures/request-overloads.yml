@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: Request overloads test
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+  /items/{id}:
+    post:
+      operationId: createItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        name:
+          type: string

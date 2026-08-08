@@ -95,6 +95,8 @@ const RESERVED_WORDS = [
 	'as', 'break', 'class', 'continue', 'do', 'else', 'false', 'for', 'fun', 'if', 'in', 'interface', 'is', 'null', 'object', 'package',
 	'return', 'super', 'this', 'throw', 'true', 'try', 'typealias', 'typeof', 'val', 'var', 'when', 'while',
 	'Unknown', // for our enum cases
+	/* Parameter names injected into every generated operation function signature */
+	'modifyRequest', 'allowsReauth', 'queryParams', 'requestBody',
 ]
 
 export function options(config: CodegenConfig, context: KotlinGeneratorContext): CodegenOptionsKotlin {

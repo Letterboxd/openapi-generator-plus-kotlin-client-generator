@@ -116,6 +116,27 @@ dependencies {
 >
 > The generated `build.gradle.kts` references version-catalog aliases such as `libs.plugins.android.library` and `libs.versions.android.compileSdk`. These are **not** declared in the generator's default `gradle/libs.versions.toml`, so you must define them yourself. We recommend managing all versions, libraries, and plugins through a [Gradle version catalog](https://docs.gradle.org/current/userguide/version_catalogs.html) (`gradle/libs.versions.toml`) in your project — this keeps versions consistent across the generated module and the rest of your build, and lets the generated references (`libs.plugins.*` / `libs.versions.*`) resolve.
 
+## Customising a request
+
+Every generated request function takes an optional trailing `modifyRequest` lambda with a Ktor [`HttpRequestBuilder`](https://api.ktor.io/ktor-client/ktor-client-core/io.ktor.client.request/-http-request-builder/index.html) receiver, so you can configure the request directly when the typed API isn't enough — for example to send query parameters the spec doesn't model, or to set the body from an arbitrary object. The lambda runs **after** the generated request items (typed query parameters and body) have been applied, so it can add to — or override — them:
+
+```kotlin
+// Append extra query parameters on top of the typed ones
+api.listItems(status = "active") {
+    val extra: Map<String, List<String>> = mapOf("tag" to listOf("new", "featured"))
+    url {
+        extra.forEach { (name, values) -> parameters.appendAll(name, values) }
+    }
+}
+
+// Override the body with an arbitrary object
+api.createItem(id = "42", requestBody = item) {
+    setBody(myOtherObject)
+}
+```
+
+The lambda defaults to `{}`, so existing calls are unaffected. Authentication is still applied after the lambda runs.
+
 ## Development
 
 To use this library in development we use the `link` command.
