@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@openapi-generator-plus/generator-common':
-        specifier: ^1.7.3
-        version: 1.7.3(openapi-types@12.1.3)
+        specifier: ^1.8.1
+        version: 1.8.1(openapi-types@12.1.3)
       '@openapi-generator-plus/indexed-type':
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.0.1
+        version: 1.0.1
       '@openapi-generator-plus/java-like-generator-helper':
-        specifier: ^2.6.3
-        version: 2.6.3(openapi-types@12.1.3)
+        specifier: ^2.6.7
+        version: 2.6.7(openapi-types@12.1.3)
       '@openapi-generator-plus/template-utils':
         specifier: ^0.2.0
         version: 0.2.0(openapi-types@12.1.3)
@@ -31,8 +31,8 @@ importers:
         specifier: ^2.31.3
         version: 2.31.3(openapi-types@12.1.3)
       '@openapi-generator-plus/types':
-        specifier: ^2.22.0
-        version: 2.22.0
+        specifier: ^2.22.2
+        version: 2.22.2
       '@stylistic/eslint-plugin':
         specifier: ^5.10.0
         version: 5.10.0(eslint@10.1.0)
@@ -510,26 +510,17 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@openapi-generator-plus/core@2.26.0':
-    resolution: {integrity: sha512-UIrQUEucr3cQB1WxodZB2kGs6Yw/qf7/yuGH24OHSomISxYLIGwgRpY5FQ1VdZGqXsPfWOKOX/dgaRSaRw2sxA==}
-
   '@openapi-generator-plus/core@2.31.3':
     resolution: {integrity: sha512-IGZDWV0ehnMAXLEAbFs/v5x45mKmhKItn1DHmb3//fzFzOuK2CLBnSQPNZdtzwy7tJ2Rzno/i4SwkbjK6QjhlQ==}
-
-  '@openapi-generator-plus/generator-common@1.7.3':
-    resolution: {integrity: sha512-jmUuc7rVpB27biV5yxMUz27mNwPoYu8TByHt9Z4Su00iZuxtMI9xdSvwRtSBKerqPs2QeM2rq2rqQd7QmhWEyA==}
 
   '@openapi-generator-plus/generator-common@1.8.1':
     resolution: {integrity: sha512-yzEEalamBqgSnpWd9RRlhIKro95lnwrkB8evbyBi7BC0bUshBOh2fhmyM08J/QXc+Aq8GNfKaGG3skKFgQZy1g==}
 
-  '@openapi-generator-plus/indexed-type@1.0.0':
-    resolution: {integrity: sha512-RGUrlulyLoH7+V6wDalDGD9bfwTyDgIMZnfPo5GmaQs3CGOZ2aSHYAsB78gVTz2KWTyc5Ov4doi2lPENeUarZQ==}
-
   '@openapi-generator-plus/indexed-type@1.0.1':
     resolution: {integrity: sha512-pGy+mo2kSk7BE5zqY7nTqAnJq5FT9oMGJh4euwUjXgG9KKdOm2PeWvlaHfgM6pqKSCOm5Jo9Mc9CPtJ+Kq7wIw==}
 
-  '@openapi-generator-plus/java-like-generator-helper@2.6.3':
-    resolution: {integrity: sha512-QXrLjNYCu7FfAQCbOmsyBDJwIAbnMDCPqtLVOwo4izLt8IHnwy8ExJuH+qMDJmDMVIykzmFQ22iwee8hMHNK5A==}
+  '@openapi-generator-plus/java-like-generator-helper@2.6.7':
+    resolution: {integrity: sha512-AsiW6bkOUyyXM9te4ZlIX/fVvOBN2LYc6qTuDWv6Lx7BgSTVb1R8Hvva4l9uCL0wsDhAr3s5305qQJ0Jv0akbQ==}
 
   '@openapi-generator-plus/json-schema-ref-parser@9.0.11':
     resolution: {integrity: sha512-SJbsXJgQozq86V2ImkLuthI9d7esDIPjG/MUw2BEVa3HLIi/lHMmAVpUvBGNIpK4+yvUGmZSpgLOLmW3R9XoTA==}
@@ -545,17 +536,11 @@ packages:
   '@openapi-generator-plus/testing@2.31.3':
     resolution: {integrity: sha512-yTbPS8KzVqMpVtP3G1TSMg+pY3wzjX+KtNGcFIgPbnxS0ZU4hMpwlCkSCNcao0eUDXiRelkfGS+taCjXM8kH1w==}
 
-  '@openapi-generator-plus/types@2.22.0':
-    resolution: {integrity: sha512-YsgEhvDs/EWRufWk75dlWO7Nh/Fk4AFZBX6JMcyrC+4NPHHVITs4OzxcFE21Ip36ZY44HymMhv1AqDaTpNTdlg==}
-
   '@openapi-generator-plus/types@2.22.2':
     resolution: {integrity: sha512-7KM/zelS4vyHbHes0CE6gookIUsGx764Ngth7H36Orviz+jkwu0QmrAdBdUzq7s7oJP72rtodgV5qbCoooW8Mw==}
 
   '@openapi-generator-plus/utils@1.1.10':
     resolution: {integrity: sha512-zCq/4FNffkAWG5tSxuuMKyADo49+Vb6+LL4aqzt535qLdGo2/hd36BdA83i8TDLowiAdXanNlMTXrxuH76faAw==}
-
-  '@openapi-generator-plus/utils@1.1.8':
-    resolution: {integrity: sha512-/jfXBx0JAXPREL8OEeBz8fZ57wqLzlWiwcmO5Cx2qIdDmimH8UpY2KwKYlKDBYpLTHpKoVAN8j2CwNRlngFu8A==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -1600,9 +1585,6 @@ packages:
 
   lodash.startcase@4.4.0:
     resolution: {integrity: sha512-+WKqsK294HMSc2jEbNgpHpd0JfIBhp7rEV4aqXWqFr6AlXov+SlcgB1Fv01y2kGe3Gc8nMW7VA0SrGuSkRfIEg==}
-
-  lodash@4.17.23:
-    resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
 
   lodash@4.18.1:
     resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
@@ -2820,17 +2802,6 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@openapi-generator-plus/core@2.26.0(openapi-types@12.1.3)':
-    dependencies:
-      '@openapi-generator-plus/indexed-type': 1.0.0
-      '@openapi-generator-plus/swagger-parser': 10.1.0(openapi-types@12.1.3)
-      '@openapi-generator-plus/types': 2.22.0
-      '@openapi-generator-plus/utils': 1.1.8
-      lodash: 4.17.23
-      pluralize: 8.0.0
-    transitivePeerDependencies:
-      - openapi-types
-
   '@openapi-generator-plus/core@2.31.3(openapi-types@12.1.3)':
     dependencies:
       '@openapi-generator-plus/indexed-type': 1.0.1
@@ -2843,34 +2814,22 @@ snapshots:
     transitivePeerDependencies:
       - openapi-types
 
-  '@openapi-generator-plus/generator-common@1.7.3(openapi-types@12.1.3)':
-    dependencies:
-      '@openapi-generator-plus/core': 2.26.0(openapi-types@12.1.3)
-      '@openapi-generator-plus/types': 2.22.0
-      '@openapi-generator-plus/utils': 1.1.8
-      pluralize: 8.0.0
-      url-parse: 1.5.10
-    transitivePeerDependencies:
-      - openapi-types
-
   '@openapi-generator-plus/generator-common@1.8.1(openapi-types@12.1.3)':
     dependencies:
       '@openapi-generator-plus/core': 2.31.3(openapi-types@12.1.3)
       '@openapi-generator-plus/types': 2.22.2
-      '@openapi-generator-plus/utils': 1.1.8
+      '@openapi-generator-plus/utils': 1.1.10
       pluralize: 8.0.0
       url-parse: 1.5.10
     transitivePeerDependencies:
       - openapi-types
 
-  '@openapi-generator-plus/indexed-type@1.0.0': {}
-
   '@openapi-generator-plus/indexed-type@1.0.1': {}
 
-  '@openapi-generator-plus/java-like-generator-helper@2.6.3(openapi-types@12.1.3)':
+  '@openapi-generator-plus/java-like-generator-helper@2.6.7(openapi-types@12.1.3)':
     dependencies:
-      '@openapi-generator-plus/generator-common': 1.7.3(openapi-types@12.1.3)
-      '@openapi-generator-plus/types': 2.22.0
+      '@openapi-generator-plus/generator-common': 1.8.1(openapi-types@12.1.3)
+      '@openapi-generator-plus/types': 2.22.2
       change-case: 4.1.2
     transitivePeerDependencies:
       - openapi-types
@@ -2896,8 +2855,8 @@ snapshots:
   '@openapi-generator-plus/template-utils@0.2.0(openapi-types@12.1.3)':
     dependencies:
       '@openapi-generator-plus/generator-common': 1.8.1(openapi-types@12.1.3)
-      '@openapi-generator-plus/indexed-type': 1.0.0
-      '@openapi-generator-plus/types': 2.22.0
+      '@openapi-generator-plus/indexed-type': 1.0.1
+      '@openapi-generator-plus/types': 2.22.2
       change-case: 4.1.2
       marked: 12.0.2
       pluralize: 8.0.0
@@ -2912,19 +2871,12 @@ snapshots:
     transitivePeerDependencies:
       - openapi-types
 
-  '@openapi-generator-plus/types@2.22.0': {}
-
   '@openapi-generator-plus/types@2.22.2': {}
 
   '@openapi-generator-plus/utils@1.1.10':
     dependencies:
       '@openapi-generator-plus/indexed-type': 1.0.1
       '@openapi-generator-plus/types': 2.22.2
-
-  '@openapi-generator-plus/utils@1.1.8':
-    dependencies:
-      '@openapi-generator-plus/indexed-type': 1.0.0
-      '@openapi-generator-plus/types': 2.22.0
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
@@ -4155,8 +4107,6 @@ snapshots:
   lodash.memoize@4.1.2: {}
 
   lodash.startcase@4.4.0: {}
-
-  lodash@4.17.23: {}
 
   lodash@4.18.1: {}
 
