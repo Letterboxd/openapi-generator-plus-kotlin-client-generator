@@ -1,5 +1,20 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 0.4.0
+
+### Minor Changes
+
+- efa1eb2: Default the generated Configuration's Json to `ignoreUnknownKeys = true`
+  so clients tolerate additive API changes instead of failing on new response keys.
+  The setting is applied before jsonBuilder, so callers can override it.
+- 1592edb: Fix decoding of explicit JSON `null` for `Nullable<T>` properties
+
+  `Nullable.Serializer.deserialize` unconditionally delegated to the value
+  serializer, so any response containing an explicit `null` (e.g.
+  `"editedAt": null`) threw a `JsonDecodingException` and failed the whole
+  response. It now checks the decoder's null mark and returns `Nullable.Null`,
+  and the serializer's descriptor is marked nullable to match.
+
 ## 0.3.0
 
 ### Minor Changes
