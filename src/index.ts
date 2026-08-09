@@ -400,6 +400,13 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 						},
 					})
 				}
+				case CodegenSchemaType.NULL: {
+					return new context.NativeType('kotlin.Any', {
+						info: {
+							serialized: '@kotlinx.serialization.Contextual kotlin.Any',
+						},
+					})
+				}
 			}
 
 			throw new Error(`Unsupported schema type: ${schemaType}`)
