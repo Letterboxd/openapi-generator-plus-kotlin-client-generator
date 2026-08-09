@@ -1,5 +1,16 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 1.0.0
+
+### Major Changes
+
+- ff06bff: Migrate templates from Handlebars to TypeScript. Templates are now TypeScript code and are customized via the generator's typed template APIs; the `customTemplates` config option is no longer supported.
+
+### Patch Changes
+
+- b0ffd06: Support the JSON Schema `null` type, mapping it to `kotlin.Any` with contextual serialization, matching the treatment of the any type.
+- 8280ba6: Update dependencies
+
 ## 0.4.0
 
 ### Minor Changes
