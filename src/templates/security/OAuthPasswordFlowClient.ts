@@ -1,0 +1,78 @@
+import { ts } from '@openapi-generator-plus/template-utils'
+import { KotlinModelContext } from '../types'
+import { generatedBy } from '../frag/generatedBy'
+
+/** The client for the OAuth 2.0 Password Flow. */
+export function oauthPasswordFlowClient(ctx: KotlinModelContext): string {
+	const root = ctx.root
+	return ts`
+/*
+ * ${generatedBy(root)}
+ */
+
+package ${root.securityPackage}
+
+import ${root.supportPackage}.APIException
+import ${root.supportPackage}.HttpClientConfigurator
+import io.ktor.client.call.body
+import io.ktor.client.request.forms.submitForm
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.parameters
+import kotlin.time.Clock
+
+/** A client for the OAuth 2.0 Password Flow */
+class OAuthPasswordFlowClient(
+    clientId: String,
+    clientSecret: String,
+    refreshURL: java.net.URL? = null,
+    private val tokenURL: java.net.URL,
+    autoRefreshInterval: kotlin.time.Duration? = null,
+    accessTokenDidChange: AccessTokenHandler? = null,
+    /** A block that allows you to further configure the HTTP client. */
+    httpClientConfig: HttpClientConfigurator? = null,
+) : AbstractOAuthFlowClient(
+    clientId, clientSecret, refreshURL, autoRefreshInterval, accessTokenDidChange, httpClientConfig
+) {
+
+    /** Authenticate the security client using [username] and [password] credentials, requesting the given [scopes] with an optional, additional [params]. */
+    suspend fun authenticate(
+        username: String,
+        password: String,
+        scopes: List<String>?,
+        params: Map<String, String>? = null
+    ): Result<Unit> = runCatching {
+        val preEmptiveRequestInstant = Clock.System.now()
+
+        val response = client.submitForm(
+            url = tokenURL.toString(),
+            formParameters = parameters {
+                append("grant_type", "password")
+                append("username", username)
+                append("password", password)
+                append("client_id", clientId)
+                append("client_secret", clientSecret)
+
+                scopes?.let {
+                    append("scope", it.joinToString(separator = " "))
+                }
+
+                params?.entries?.forEach { (key, value) ->
+                    append(key, value)
+                }
+            }
+        )
+
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                val token: OAuthAccessToken = response.body()
+                token.createdAt = preEmptiveRequestInstant
+                tokenManager.setAccessToken(token)
+            }
+            else -> throw APIException.AuthenticationFailed(response)
+        }
+    }
+
+    companion object
+}
+`
+}

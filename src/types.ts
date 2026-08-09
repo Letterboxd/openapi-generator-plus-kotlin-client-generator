@@ -10,7 +10,6 @@ export interface CodegenOptionsKotlin extends JavaLikeOptions {
 	securityPackage: string
 
 	relativeSourceOutputPath: string
-	customTemplatesPath: string | null
 	hideGenerationTimestamp: boolean
 
 	dateImplementation: string

@@ -1,0 +1,44 @@
+import { ts } from '@openapi-generator-plus/template-utils'
+import { KotlinModelContext } from '../types'
+import { generatedBy } from '../frag/generatedBy'
+
+/** The client for the OAuth 2.0 Authorization Code Flow. */
+export function oauthAuthorizationCodeFlowClient(ctx: KotlinModelContext): string {
+	const root = ctx.root
+	return ts`
+/*
+ * ${generatedBy(root)}
+ */
+
+package ${root.securityPackage}
+
+import ${root.supportPackage}.HttpClientConfigurator
+
+/** A client for the OAuth 2.0 Authorization Code Flow */
+class OAuthAuthorizationCodeFlowClient(
+    clientId: String,
+    clientSecret: String,
+    refreshURL: java.net.URL? = null,
+    private val tokenURL: java.net.URL,
+    private val authorizationURL: java.net.URL,
+    autoRefreshInterval: kotlin.time.Duration? = null,
+    accessTokenDidChange: AccessTokenHandler? = null,
+    /** A block that allows you to further configure the HTTP client. */
+    httpClientConfig: HttpClientConfigurator? = null,
+) : AbstractOAuthFlowClient(
+    clientId,
+    clientSecret,
+    refreshURL,
+    autoRefreshInterval,
+    accessTokenDidChange,
+    httpClientConfig
+) {
+    // TODO: Implement the authorization code client
+    // Provide a function to create a URL for the authorize request, including requested scopes, that the developer can use to open a web view
+    // Provide an authenticate function that takes an authorization code to obtain an access token
+    // Provide an authenticate function that takes a URL, extracts an authorization code from it and uses that to obtain an access token
+
+    companion object
+}
+`
+}

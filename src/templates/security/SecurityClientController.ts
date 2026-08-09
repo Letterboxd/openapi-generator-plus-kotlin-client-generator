@@ -1,0 +1,51 @@
+import { ts } from '@openapi-generator-plus/template-utils'
+import { KotlinModelContext } from '../types'
+import { generatedBy } from '../frag/generatedBy'
+
+/** The controller that delegates security requirements to the appropriate `SecurityClient`. */
+export function securityClientController(ctx: KotlinModelContext): string {
+	const root = ctx.root
+	return ts`
+/*
+ * ${generatedBy(root)}
+ */
+
+package ${root.securityPackage}
+
+import ${root.supportPackage}.APIException
+import io.ktor.client.request.HttpRequestBuilder
+
+/**
+Delegates security requirements to the appropriate SecurityClient.
+This controller serves as the default intended security client for any API configuration and can be safely shared by multiple API instances.
+
+Note: Specific [SecurityClient] objects can be inserted or replaced dynamically to accommodate user behavior changes, such as signing in or signing out.
+ */
+class SecurityClientController(
+    private val clients: MutableMap<SecurityScheme, SecurityClient> = mutableMapOf()
+) : SecurityClient {
+
+    fun setClient(securityScheme: SecurityScheme, client: SecurityClient) {
+        clients[securityScheme] = client
+    }
+
+    fun getClient(securityScheme: SecurityScheme): SecurityClient? {
+        return clients[securityScheme]
+    }
+
+    override suspend fun reauthenticate(
+        requestData: RequestData, securityScheme: SecurityScheme, scopes: List<String>?
+    ): Result<Unit> {
+        return clients[securityScheme]?.reauthenticate(requestData, securityScheme, scopes)
+            ?: Result.failure(APIException.SecuritySchemeNotConfigured(securityScheme))
+    }
+
+    override suspend fun authorize(
+        requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ): Result<Unit> {
+        return clients[securityScheme]?.authorize(requestBuilder, securityScheme, scopes)
+            ?: Result.failure(APIException.SecuritySchemeNotConfigured(securityScheme))
+    }
+}
+`
+}

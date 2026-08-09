@@ -1,11 +1,11 @@
 import { commonGenerator, configBoolean, configObject, configString, configStringArray, debugStringify } from '@openapi-generator-plus/generator-common'
-import { emit, loadTemplates, registerStandardHelpers } from '@openapi-generator-plus/handlebars-templates'
+import { emit as emitTemplate } from '@openapi-generator-plus/template-utils'
 import { ConstantStyle, EnumMemberStyle, JavaLikeContext, javaLikeGenerator, options as javaLikeOptions } from '@openapi-generator-plus/java-like-generator-helper'
 import { CodegenAllOfStrategy, CodegenAnyOfStrategy, CodegenConfig, CodegenDocument, CodegenGenerator, CodegenGeneratorContext, CodegenGeneratorType, CodegenLogLevel, CodegenNativeType, CodegenOneOfStrategy, CodegenSchemaPurpose, CodegenSchemaType, isCodegenEnumSchema, isCodegenHierarchySchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
-import Handlebars from 'handlebars'
 import path from 'path'
 import { CodegenOptionsKotlin } from './types'
-import { promises as fs } from 'fs'
+import * as templates from './templates'
+import { KotlinModelContext, RootContext } from './templates'
 
 export { CodegenOptionsKotlin as CodegenOptionsTypeScript } from './types'
 
@@ -30,18 +30,10 @@ export function packageToPath(packageName: string): string {
 	return packageName.replace(/\./g, path.sep)
 }
 
-function computeCustomTemplatesPath(configPath: string | undefined, customTemplatesPath: string) {
-	if (configPath) {
-		return path.resolve(path.dirname(configPath), customTemplatesPath) 
-	} else {
-		return customTemplatesPath
-	}
-}
-
 function computeRelativeSourceOutputPath(config: CodegenConfig) {
 	const gradle = config.gradle
 	const defaultPath = gradle ? path.join('src', 'main', 'kotlin') : ''
-	
+
 	return configString(config, 'relativeSourceOutputPath', defaultPath)
 }
 
@@ -50,24 +42,23 @@ function toSafeTypeForComposing(nativeType: string): string {
 }
 
 export interface KotlinGeneratorContext extends CodegenGeneratorContext {
-	loadAdditionalTemplates?: (hbs: typeof Handlebars) => Promise<void>
+	/**
+	 * Emit additional generator-specific files, beyond the files this generator
+	 * emits itself.
+	 */
+	exportFiles?: (outputPath: string, doc: CodegenDocument, rootContext: Record<string, unknown>) => Promise<void>
 	additionalWatchPaths?: () => string[]
-	additionalExportTemplates?: (outputPath: string, doc: CodegenDocument, hbs: typeof Handlebars, rootContext: Record<string, unknown>) => Promise<void>
 	additionalCleanPathPatterns?: () => string[]
 }
 
+/**
+ * Merge `add` (a chaining generator's own contribution) with `base` (whatever
+ * the calling — and so more specific — generator has already assembled) to
+ * produce the context to pass to this generator's implementation.
+ */
 export function chainKotlinGeneratorContext(base: KotlinGeneratorContext, add: Partial<KotlinGeneratorContext>): KotlinGeneratorContext {
 	const result: KotlinGeneratorContext = {
 		...base,
-		loadAdditionalTemplates: async function(hbs) {
-			/* Load the additional first, so that earlier contexts in the chain have priority */
-			if (add.loadAdditionalTemplates) {
-				await add.loadAdditionalTemplates(hbs)
-			}
-			if (base.loadAdditionalTemplates) {
-				await base.loadAdditionalTemplates(hbs)
-			}
-		},
 		additionalWatchPaths: function() {
 			const result: string[] = []
 			if (base.additionalWatchPaths) {
@@ -78,12 +69,12 @@ export function chainKotlinGeneratorContext(base: KotlinGeneratorContext, add: P
 			}
 			return result
 		},
-		additionalExportTemplates: async function(outputPath, doc, hbs, rootContext) {
-			if (base.additionalExportTemplates) {
-				await base.additionalExportTemplates(outputPath, doc, hbs, rootContext)
+		exportFiles: async function(outputPath, doc, rootContext) {
+			if (base.exportFiles) {
+				await base.exportFiles(outputPath, doc, rootContext)
 			}
-			if (add.additionalExportTemplates) {
-				await add.additionalExportTemplates(outputPath, doc, hbs, rootContext)
+			if (add.exportFiles) {
+				await add.exportFiles(outputPath, doc, rootContext)
 			}
 		},
 	}
@@ -101,8 +92,10 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 	const packageName = configString(config, 'package', 'com.example')
 	const apiPackage = configString(config, 'apiPackage', packageName)
 	const supportPackage = `${packageName}.support`
-	
-	const customTemplates = configString(config, 'customTemplates', undefined)
+
+	if (config.customTemplates !== undefined) {
+		context.log(CodegenLogLevel.WARN, 'The customTemplates config option is no longer supported: templates are TypeScript code and are customized via the generator\'s typed template APIs')
+	}
 
 	const gradle = configObject(config, 'gradle', undefined)
 	const groupId = gradle ? configString(gradle, 'groupId', 'com.example', 'gradle.') : 'com.example'
@@ -135,7 +128,6 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 		modelPackage: configString(config, 'modelPackage', `${packageName}.model`),
 		supportPackage: configString(config, 'supportPackage', supportPackage),
 		securityPackage: configString(config, 'securityPackage', `${packageName}.security`),
-		customTemplatesPath: customTemplates ? computeCustomTemplatesPath(config.configPath, customTemplates) : null,
 		hideGenerationTimestamp: configBoolean(config, 'hideGenerationTimestamp', false),
 
 		dateImplementation: configString(config, 'dateImplementation', `${supportPackage}.LocalDate`),
@@ -200,7 +192,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				}
 				return defaultValue.literalValue
 			}
-	
+
 			const { type, format, nullable, schemaType } = options
 			if (value === null) {
 				if (nullable) {
@@ -213,7 +205,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				}
 				return defaultValue.literalValue
 			}
-	
+
 			if (schemaType === CodegenSchemaType.ENUM) {
 				return `${options.nativeType.concreteType}.${context.generator().toEnumMemberName(String(value))}`
 			}
@@ -318,7 +310,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					return `listOf(${arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component })).join(', ')})`
 				}
 			}
-	
+
 			throw new Error(`Unsupported literal type name "${type}" in options: ${debugStringify(options)}`)
 		},
 		toNativeType: (options) => {
@@ -331,14 +323,14 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			if (vendorExtensions && vendorExtensions['x-kotlin-type']) {
 				return new context.NativeType(String(vendorExtensions['x-kotlin-type']))
 			}
-			
+
 			/* See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#data-types */
 			switch (schemaType) {
 				case CodegenSchemaType.INTEGER: {
-					// TODO, DISCUSS WITH KARL & GRANT : Really...? Why do we want to use int which only has a precision of 32 bit when we are unsure of its format 
+					// TODO, DISCUSS WITH KARL & GRANT : Really...? Why do we want to use int which only has a precision of 32 bit when we are unsure of its format
 					// instead of long which has more precision and thus support for larger numbers?
-					// 
-					// See also: 
+					//
+					// See also:
 					// - https://swagger.io/docs/specification/data-models/data-types/#numbers
 					// - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number#number_encoding
 					// - https://www.w3schools.com/js/js_numbers.asp
@@ -409,7 +401,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					})
 				}
 			}
-	
+
 			throw new Error(`Unsupported schema type: ${schemaType}`)
 		},
 		toNativeObjectType: function(options) {
@@ -439,7 +431,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 								serialized: `kotlin.collections.Set<${nativeType.info.serialized}>`,
 							}
 						}
-						
+
 						return nativeType.info
 					},
 				})
@@ -460,7 +452,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 								serialized: `kotlin.collections.List<${nativeType.info.serialized}>`,
 							}
 						}
-						
+
 						return nativeType.info
 					},
 				})
@@ -507,7 +499,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (!required) {
 						nativeTypeString = `${toSafeTypeForComposing(nativeTypeString)}?`
 					}
-					
+
 					return {
 						...nativeType.info,
 						serialized: nativeTypeString,
@@ -535,7 +527,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			if (!required) {
 				return { value: null, literalValue: 'null' }
 			}
-	
+
 			switch (schemaType) {
 				case CodegenSchemaType.ENUM:
 				case CodegenSchemaType.DATE:
@@ -570,7 +562,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					return { value: false, literalValue }
 				}
 			}
-	
+
 			throw new Error(`Unsupported default value type: ${schemaType}`)
 		},
 		initialValue: (options) => {
@@ -591,11 +583,11 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			if (defaultValue) {
 				return defaultValue
 			}
-	
+
 			if (!required) {
 				return null
 			}
-	
+
 			/*
 			  We create empty collections for required properties in the Java code. This is because we generate
 			  convenience methods for collections that initialise the collection when adding the first element,
@@ -603,7 +595,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			  a null collection value if the code didn't _add_ any elements. This would then require
 			  explicitly initialising each required collection in user code, either every time, or whenever
 			  no elements are added to it.
-			  
+
 			  Therfore we are not able to detect whether the user code has forgotten to populate the collection, like
 			  we are with scalar required properties, so we populate it with an empty collection so we always generate
 			  a valid result.
@@ -635,24 +627,21 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 		interfaceCanBeNested: () => true,
 
 		watchPaths: () => {
-			const result = [path.resolve(__dirname, '..', 'templates')]
+			const result: string[] = []
 			if (context.additionalWatchPaths) {
 				result.push(...context.additionalWatchPaths())
 			}
-			if (generatorOptions.customTemplatesPath) {
-				result.push(generatorOptions.customTemplatesPath)
-			}
-			return result
+			return result.length ? result : undefined
 		},
-		
+
 		generatorType: () => CodegenGeneratorType.CLIENT,
-	
+
 		cleanPathPatterns: () => {
 			const relativeSourceOutputPath = generatorOptions.relativeSourceOutputPath
-			
+
 			const apiPackagePath = packageToPath(generatorOptions.apiPackage)
 			const modelPackagePath = packageToPath(generatorOptions.modelPackage)
-	
+
 			const result = [
 				path.join(relativeSourceOutputPath, apiPackagePath, '*Api.kt'),
 				path.join(relativeSourceOutputPath, modelPackagePath, '*.kt'),
@@ -672,29 +661,19 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 		},
 
 		exportTemplates: async(outputPath, doc) => {
-			const hbs = Handlebars.create()
+			/* `securitySchemes` and `servers` are document-wide, so they're merged in here rather
+			   than contributed by `templateRootContext` — every template can rely on them. */
+			const rootContext = {
+				...context.generator().templateRootContext(),
+				securitySchemes: doc.securitySchemes,
+				servers: doc.servers,
+			} as RootContext
 
-			registerStandardHelpers(hbs, context)
-
-			hbs.registerHelper('stripLeadingSlash', function(text) {
-				if (text.startsWith('/')) {
-					return text.substring(1, text.length)
-				} else {
-					return text
-				}
-			})
-
-			await loadTemplates(path.resolve(__dirname, '..', 'templates'), hbs)
-			if (context.loadAdditionalTemplates) {
-				await context.loadAdditionalTemplates(hbs)
+			const modelContext: KotlinModelContext = {
+				generatorContext: context,
+				root: rootContext,
 			}
 
-			if (generatorOptions.customTemplatesPath) {
-				await loadTemplates(generatorOptions.customTemplatesPath, hbs)
-			}
-
-			const rootContext = context.generator().templateRootContext()
-			
 			const relativeSourceOutputPath = generatorOptions.relativeSourceOutputPath
 
 			const apiPackagePath = packageToPath(generatorOptions.apiPackage)
@@ -703,56 +682,69 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				if (!operations.length) {
 					continue
 				}
-	
-				await emit('api', path.join(outputPath, relativeSourceOutputPath, apiPackagePath, `${context.generator().toClassName(group.name)}Api.kt`), 
-					{ ...rootContext, ...group, operations, servers: doc.servers }, true, hbs)
+
+				await emitTemplate(templates.api(group, modelContext), path.join(outputPath, relativeSourceOutputPath, apiPackagePath, `${context.generator().toClassName(group.name)}Api.kt`), true)
 			}
 
 			const modelPackagePath = packageToPath(generatorOptions.modelPackage)
 			for (const schema of context.utils.values(doc.schemas)) {
 				if (isCodegenObjectSchema(schema)) {
-					await emit('pojo', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
-						{ ...rootContext, pojo: schema }, true, hbs)
+					await emitTemplate(templates.pojo(schema, modelContext), path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), true)
 				} else if (isCodegenEnumSchema(schema)) {
-					await emit('enum', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
-						{ ...rootContext, enum: schema }, true, hbs)
+					await emitTemplate(templates.enumModel(schema, modelContext), path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), true)
 				} else if (isCodegenInterfaceSchema(schema)) {
-					await emit('interface', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
-						{ ...rootContext, interface: schema }, true, hbs)
+					await emitTemplate(templates.interfaceModel(schema, modelContext), path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), true)
 				} else if (isCodegenHierarchySchema(schema)) {
-					await emit('hierarchy', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
-						{ ...rootContext, hierarchy: schema }, true, hbs)
+					await emitTemplate(templates.hierarchy(schema, modelContext), path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), true)
 				} else if (isCodegenOneOfSchema(schema)) {
-					await emit('oneOf', path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), 
-						{ ...rootContext, oneOf: schema }, true, hbs)
+					await emitTemplate(templates.oneOf(schema, modelContext), path.join(outputPath, relativeSourceOutputPath, modelPackagePath, `${context.generator().toClassName(schema.name)}.kt`), true)
 				}
 			}
-	
+
 			const gradle = generatorOptions.gradle
 			if (gradle) {
-				await emit('build.gradle.kts', path.join(outputPath, 'build.gradle.kts'), { ...rootContext, ...gradle }, true, hbs)
-				await emit('settings.gradle.kts', path.join(outputPath, 'settings.gradle.kts'), { ...rootContext, ...gradle }, false, hbs)
-				await emit('libs.versions.toml', path.join(outputPath, 'gradle', 'libs.versions.toml'), { ...rootContext, ...gradle }, false, hbs)
+				await emitTemplate(templates.buildGradleKts(gradle, modelContext), path.join(outputPath, 'build.gradle.kts'), true)
+				await emitTemplate(templates.settingsGradleKts(), path.join(outputPath, 'settings.gradle.kts'), false)
+				await emitTemplate(templates.libsVersionsToml(), path.join(outputPath, 'gradle', 'libs.versions.toml'), false)
 			}
-			
+
 			/* Support */
 			const supportPackagePath = packageToPath(generatorOptions.supportPackage)
-			for (const file of await fs.readdir(path.resolve(__dirname, '..', 'templates', 'support'))) {
-				const fileBase = path.basename(file, path.extname(file))
-				await emit(`support/${fileBase}`, path.join(outputPath, relativeSourceOutputPath, supportPackagePath, fileBase),
-					{ ...rootContext }, true, hbs)
+			const supportFiles: [string, (ctx: KotlinModelContext) => string][] = [
+				['APIException.kt', templates.apiException],
+				['Configuration.kt', templates.configuration],
+				['DateTime.kt', templates.dateTime],
+				['Nullable.kt', templates.nullable],
+				['Types.kt', templates.supportTypes],
+				['URLSerializer.kt', templates.urlSerializer],
+				['UUIDSerializer.kt', templates.uuidSerializer],
+			]
+			for (const [fileName, template] of supportFiles) {
+				await emitTemplate(template(modelContext), path.join(outputPath, relativeSourceOutputPath, supportPackagePath, fileName), true)
 			}
 
 			/* Security */
 			const securityPackagePath = packageToPath(generatorOptions.securityPackage)
-			for (const file of await fs.readdir(path.resolve(__dirname, '..', 'templates', 'security'))) {
-				const fileBase = path.basename(file, path.extname(file))
-				await emit(`security/${fileBase}`, path.join(outputPath, relativeSourceOutputPath, securityPackagePath, fileBase),
-					{ ...rootContext, securitySchemes: doc.securitySchemes }, true, hbs)
+			const securityFiles: [string, (ctx: KotlinModelContext) => string][] = [
+				['APIKeySecurityClient.kt', templates.apiKeySecurityClient],
+				['AbstractOAuthFlowClient.kt', templates.abstractOAuthFlowClient],
+				['BasicAuthenticationSecurityClient.kt', templates.basicAuthenticationSecurityClient],
+				['OAuthAccessToken.kt', templates.oauthAccessToken],
+				['OAuthAccessTokenManager.kt', templates.oauthAccessTokenManager],
+				['OAuthAuthorizationCodeFlowClient.kt', templates.oauthAuthorizationCodeFlowClient],
+				['OAuthClientCredentialsFlowClient.kt', templates.oauthClientCredentialsFlowClient],
+				['OAuthPasswordFlowClient.kt', templates.oauthPasswordFlowClient],
+				['RequestData.kt', templates.requestData],
+				['SecurityClient.kt', templates.securityClient],
+				['SecurityClientController.kt', templates.securityClientController],
+				['SecurityScheme.kt', templates.securityScheme],
+			]
+			for (const [fileName, template] of securityFiles) {
+				await emitTemplate(template(modelContext), path.join(outputPath, relativeSourceOutputPath, securityPackagePath, fileName), true)
 			}
-	
-			if (context.additionalExportTemplates) {
-				await context.additionalExportTemplates(outputPath, doc, hbs, rootContext)
+
+			if (context.exportFiles) {
+				await context.exportFiles(outputPath, doc, rootContext)
 			}
 		},
 
@@ -788,8 +780,8 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			}
 
 			/**
-			 * Because in Kotlin we use an interface for allOf, 
-			 * we can't comply if the required status mismatches at all, 
+			 * Because in Kotlin we use an interface for allOf,
+			 * we can't comply if the required status mismatches at all,
 			 * for the same reason as nullability above.
 			 */
 			if (parentProp.required !== childProp.required) {

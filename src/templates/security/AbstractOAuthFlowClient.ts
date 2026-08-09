@@ -1,0 +1,85 @@
+import { ts } from '@openapi-generator-plus/template-utils'
+import { KotlinModelContext } from '../types'
+import { generatedBy } from '../frag/generatedBy'
+
+/** The base class for the OAuth 2.0 flow security clients, managing tokens and the auth HTTP client. */
+export function abstractOAuthFlowClient(ctx: KotlinModelContext): string {
+	const root = ctx.root
+	return ts`
+/*
+ * ${generatedBy(root)}
+ */
+
+package ${root.securityPackage}
+
+import ${root.supportPackage}.HttpClientConfigurator
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
+import java.net.URL
+import kotlin.time.Duration
+
+abstract class AbstractOAuthFlowClient(
+    val clientId: String,
+    val clientSecret: String,
+    refreshURL: URL?,
+    autoRefreshInterval: Duration? = null,
+    accessTokenDidChange: AccessTokenHandler?,
+    /** A block that allows you to further configure the HTTP client. */
+    httpClientConfig: HttpClientConfigurator?,
+) : SecurityClient {
+
+    protected val tokenManager: OAuthAccessTokenManager
+    protected val client = HttpClient(OkHttp) {
+        httpClientConfig?.invoke(this)
+
+        install(ContentNegotiation) {
+            json(Json {
+                encodeDefaults = false
+            })
+        }
+    }
+
+    val refreshToken: String?
+        get() = tokenManager.accessToken?.refreshToken
+
+    val accessToken: OAuthAccessToken?
+        get() = tokenManager.accessToken
+
+    var revocationURL: URL? = null
+
+    init {
+        tokenManager = OAuthAccessTokenManager(
+            clientId, clientSecret, refreshURL, autoRefreshInterval, accessTokenDidChange, client
+        )
+    }
+
+    /** Authenticate the security client using a refresh token. */
+    suspend fun authenticate(refreshToken: String): Result<Unit> {
+        tokenManager.setAccessToken(OAuthAccessToken(refreshToken = refreshToken))
+        return tokenManager.refreshToken()
+    }
+
+    override suspend fun reauthenticate(
+        requestData: RequestData, securityScheme: SecurityScheme, scopes: List<String>?
+    ) = tokenManager.refreshToken(requestData)
+
+    override suspend fun authorize(
+        requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ) = tokenManager.authorize(requestBuilder)
+
+    suspend fun revokeRefreshToken(): Result<Unit> {
+        val revocationURL = revocationURL ?: return Result.failure(IllegalArgumentException("Revocation URL missing."))
+        return tokenManager.revokeRefreshToken(revocationURL)
+    }
+
+    suspend fun revokeAccessToken(): Result<Unit> {
+        val revocationURL = revocationURL ?: return Result.failure(IllegalArgumentException("Revocation URL missing."))
+        return tokenManager.revokeAccessToken(revocationURL)
+    }
+}
+`
+}

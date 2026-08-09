@@ -1,0 +1,54 @@
+import { ts } from '@openapi-generator-plus/template-utils'
+import { KotlinModelContext } from '../types'
+import { generatedBy } from '../frag/generatedBy'
+
+/** The security client that applies an API key to requests. */
+export function apiKeySecurityClient(ctx: KotlinModelContext): string {
+	const root = ctx.root
+	return ts`
+/*
+ * ${generatedBy(root)}
+ */
+
+package ${root.securityPackage}
+
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.cookie
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+
+/**
+ * A \`SecurityClient\` responsible for handling API Key authentication credentials.
+ *
+ * @property apiKey A string representing the username for authentication.
+ * @property mode A setting to configure the location of the API Key in the request.
+ * @property paramName The name of the parameter which will appear as the header or query name
+ */
+class APIKeySecurityClient(
+    private val apiKey: String,
+    private val mode: Mode,
+    private val paramName: String,
+) : SecurityClient {
+    enum class Mode {
+        HEADER, QUERY, COOKIE
+    }
+
+    /** **This function does not do anything**, as an API key doesn't expire. */
+    override suspend fun reauthenticate(
+        requestData: RequestData, securityScheme: SecurityScheme, scopes: List<String>?
+    ): Result<Unit> = Result.success(Unit)
+
+    override suspend fun authorize(
+        requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
+    ): Result<Unit> {
+        when (mode) {
+            Mode.HEADER -> requestBuilder.header(paramName, apiKey)
+            Mode.QUERY -> requestBuilder.parameter(paramName, apiKey)
+            Mode.COOKIE -> requestBuilder.cookie(paramName, apiKey)
+        }
+
+        return Result.success(Unit)
+    }
+}
+`
+}

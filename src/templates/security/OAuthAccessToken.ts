@@ -1,0 +1,50 @@
+import { ts } from '@openapi-generator-plus/template-utils'
+import { KotlinModelContext } from '../types'
+import { generatedBy } from '../frag/generatedBy'
+
+/** The OAuth access token model, including expiry tracking. */
+export function oauthAccessToken(ctx: KotlinModelContext): string {
+	const root = ctx.root
+	return ts`
+/*
+ * ${generatedBy(root)}
+ */
+
+package ${root.securityPackage}
+
+import kotlin.time.Clock
+import kotlin.time.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlin.time.Duration
+
+@Serializable
+data class OAuthAccessToken(
+    /** The access token that grants the member access. Combine this with the <code>token_type</code> to form the <code>Authorization</code> header. */
+    @SerialName(value = "access_token") val accessToken: String? = null,
+
+    /** The type of the access token. Use value: <code>bearer</code> */
+    @SerialName(value = "token_type") val tokenType: String? = null,
+
+    /** The refresh token is used to obtain a new access token, after the access token expires, without needing to prompt the member for their credentials again. The refresh token only expires if it is explicitly invalidated by Letterboxd, in which case the member should be prompted for their credentials (or stored credentials used). */
+    @SerialName(value = "refresh_token") val refreshToken: String? = null,
+
+    /** The number of seconds before the access token expires. */
+    @SerialName(value = "expires_in") val expiresIn: Long? = null,
+
+    /** The approved scope or scopes. */
+    @SerialName(value = "scope") val scope: String? = null
+) {
+
+    var createdAt: Instant = Clock.System.now()
+    val isExpired: Boolean
+        get() {
+            val expiresIn = expiresIn ?: return false
+            val expiredInstant = createdAt + Duration.parse("\${expiresIn}s")
+            val now = Clock.System.now()
+            return expiredInstant < now
+        }
+
+}
+`
+}
