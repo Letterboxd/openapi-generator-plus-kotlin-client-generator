@@ -24,3 +24,12 @@ export function propertyValues(properties: CodegenProperties | null | undefined)
 export function parameterValues(parameters: CodegenParameters | null | undefined): CodegenParameter[] {
 	return parameters ? idx.allValues(parameters) : []
 }
+
+/**
+ * The name of the \`SecurityScheme\` constant for the security scheme named `name`: the name in upper case, with
+ * each character that an identifier can't hold replaced with an underscore.
+ */
+export function securitySchemeConstant(name: string): string {
+	const constant = name.toLocaleUpperCase().replace(/[^\p{L}\p{N}_]/gu, '_')
+	return /^\p{N}/u.test(constant) ? `_${constant}` : constant
+}

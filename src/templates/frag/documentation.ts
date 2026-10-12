@@ -2,6 +2,14 @@ import { CodegenExternalDocs, CodegenOperation } from '@openapi-generator-plus/t
 import { md, joinLines, Skip, SKIP, ts, maybe, when } from '@openapi-generator-plus/template-utils'
 import { indentContinuation } from '../helpers'
 
+/**
+ * `text` made safe to put in a KDoc comment. Kotlin comments nest, so a slash and star would open a
+ * comment inside it, and a star and slash would end it.
+ */
+function commentText(text: string): string {
+	return text.replace(/\/\*/g, '/&#42;').replace(/\*\//g, '*&#47;')
+}
+
 interface Documented {
 	description?: string | null
 	externalDocs?: CodegenExternalDocs | null
@@ -19,10 +27,10 @@ export function schemaDocumentation(target: Documented): string | Skip {
 	}
 	return ts`
 /**
-${maybe(description, d => ` * ${indentContinuation(md(d), ' * ')}`)}
+${maybe(description, d => ` * ${indentContinuation(commentText(md(d)), ' * ')}`)}
 ${when(externalDocs, () => ts`
- * <p>External documentation: ${externalDocs!.url}</p>
-${maybe(externalDocs!.description, d => ` * ${indentContinuation(d, ' * ')}`)}`)}
+ * <p>External documentation: ${commentText(externalDocs!.url)}</p>
+${maybe(externalDocs!.description, d => ` * ${indentContinuation(commentText(d), ' * ')}`)}`)}
  */`
 }
 
@@ -40,21 +48,20 @@ export function operationDocumentation(operation: CodegenOperation): string | Sk
 	}
 	return ts`
 /**
-${maybe(summary, s => ` * ${indentContinuation(s, ' * ')}`)}
-${maybe(description, d => ` * ${indentContinuation(d, ' * ')}`)}
+${maybe(summary, s => ` * ${indentContinuation(commentText(s), ' * ')}`)}
+${maybe(description, d => ` * ${indentContinuation(commentText(d), ' * ')}`)}
 ${when(externalDocs, () => ts`
- * <p>External documentation: ${externalDocs!.url}</p>
-${maybe(externalDocs!.description, d => ` * ${indentContinuation(d, ' * ')}`)}`)}
+ * <p>External documentation: ${commentText(externalDocs!.url)}</p>
+${maybe(externalDocs!.description, d => ` * ${indentContinuation(commentText(d), ' * ')}`)}`)}
  */`
 }
 
 /**
- * A single-line KDoc comment for a property or parameter, built from its
- * description with blank lines removed. Returns SKIP when there is no
- * description.
+ * A single-line KDoc comment for a property, a parameter or a response, built from its
+ * description with its lines joined. Returns SKIP when there is no description.
  */
 export function propertyDocumentation(target: { description?: string | null }): string | Skip {
-	const description = target.description ? joinLines(target.description, '\n') : ''
+	const description = target.description ? commentText(joinLines(target.description, ' ')) : ''
 	if (!description) {
 		return SKIP
 	}

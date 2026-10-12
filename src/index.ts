@@ -17,6 +17,7 @@ function escapeString(value: string | number | boolean) {
 	value = String(value)
 	value = value.replace(/\\/g, '\\\\')
 	value = value.replace(/"/g, '\\"')
+	value = value.replace(/\$/g, '\\$')
 	value = value.replace(/\r/g, '\\r')
 	value = value.replace(/\n/g, '\\n')
 	return value
@@ -253,7 +254,9 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				}
 				case 'string': {
 					if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
-						throw new Error(`toLiteral with type string called with unsupported type: ${typeof value} (${value})`)
+						/* A specification may give a value, such as an example, that doesn't match the schema */
+						context.log(CodegenLogLevel.WARN, `Literal value of type ${typeof value} is unsupported for schema type string: ${debugStringify(value)}`)
+						return null
 					}
 
 					if (format === 'byte') {
@@ -307,7 +310,11 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (!component) {
 						throw new Error(`toLiteral cannot format array literal without a component type: ${value}`)
 					}
-					return `listOf(${arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component })).join(', ')})`
+					const literals = arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component }))
+					if (literals.some(literal => literal === null)) {
+						return null
+					}
+					return `listOf(${literals.join(', ')})`
 				}
 			}
 
