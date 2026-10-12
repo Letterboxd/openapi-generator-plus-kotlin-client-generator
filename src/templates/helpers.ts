@@ -1,4 +1,5 @@
-import { CodegenParameter, CodegenParameters, CodegenProperties, CodegenProperty } from '@openapi-generator-plus/types'
+import { CodegenEnumSchema, CodegenParameter, CodegenParameters, CodegenProperties, CodegenProperty, CodegenSchema } from '@openapi-generator-plus/types'
+import { isEnum } from '@openapi-generator-plus/template-utils'
 import * as idx from '@openapi-generator-plus/indexed-type'
 
 /**
@@ -25,6 +26,23 @@ export function parameterValues(parameters: CodegenParameters | null | undefined
 	return parameters ? idx.allValues(parameters) : []
 }
 
+/** The kind of number of an enum of numbers, whose values JSON writes as numbers, or `null` for any other schema. */
+export function numericEnumKind(schema: CodegenSchema): 'LONG' | 'DOUBLE' | null {
+	const valueType = isEnum(schema) ? (schema as CodegenEnumSchema).enumValueNativeType : null
+	if (valueType && /^kotlin\.(Int|Long|Short|Byte)$/.test(valueType.concreteType)) {
+		return 'LONG'
+	}
+	if (valueType && /^kotlin\.(Float|Double)$/.test(valueType.concreteType)) {
+		return 'DOUBLE'
+	}
+	return null
+}
+
+/** Whether `schema` is an enum of numbers, whose values JSON writes as numbers. */
+export function isNumericEnum(schema: CodegenSchema): boolean {
+	return numericEnumKind(schema) !== null
+}
+
 /**
  * The name of the \`SecurityScheme\` constant for the security scheme named `name`: the name in upper case, with
  * each character that an identifier can't hold replaced with an underscore.
@@ -32,4 +50,9 @@ export function parameterValues(parameters: CodegenParameters | null | undefined
 export function securitySchemeConstant(name: string): string {
 	const constant = name.toLocaleUpperCase().replace(/[^\p{L}\p{N}_]/gu, '_')
 	return /^\p{N}/u.test(constant) ? `_${constant}` : constant
+}
+
+/** The Kotlin Double literal of the number `text`. A whole number needs a decimal point to be a Double literal. */
+export function doubleLiteral(text: string): string {
+	return /[.eE]/.test(text) ? text : `${text}.0`
 }

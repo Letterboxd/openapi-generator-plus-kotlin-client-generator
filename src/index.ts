@@ -6,6 +6,7 @@ import path from 'path'
 import { CodegenOptionsKotlin } from './types'
 import * as templates from './templates'
 import { KotlinModelContext, RootContext } from './templates'
+import { doubleLiteral } from './templates/helpers'
 
 export { CodegenOptionsKotlin as CodegenOptionsTypeScript } from './types'
 
@@ -87,6 +88,7 @@ const RESERVED_WORDS = [
 	'as', 'break', 'class', 'continue', 'do', 'else', 'false', 'for', 'fun', 'if', 'in', 'interface', 'is', 'null', 'object', 'package',
 	'return', 'super', 'this', 'throw', 'true', 'try', 'typealias', 'typeof', 'val', 'var', 'when', 'while',
 	'Unknown', // for our enum cases
+	'Serializer', // for the serializers that our enums and oneOfs nest
 ]
 
 export function options(config: CodegenConfig, context: KotlinGeneratorContext): CodegenOptionsKotlin {
@@ -208,7 +210,8 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			}
 
 			if (schemaType === CodegenSchemaType.ENUM) {
-				return `${options.nativeType.concreteType}.${context.generator().toEnumMemberName(String(value))}`
+				/* Core makes the names of the members unique, which the options don't say, so the literal looks the member up by its value */
+				return `${options.nativeType.concreteType}.valueOf("${escapeString(String(value))}")`
 			}
 
 			switch (type) {
@@ -247,7 +250,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (format === 'float') {
 						return `${value}f`
 					} else if (format === 'double' || !format) {
-						return `${value}`
+						return doubleLiteral(String(value))
 					} else {
 						throw new Error(`Unsupported ${type} format: ${format}`)
 					}
