@@ -66,10 +66,10 @@ dependencyResolutionManagement {
 export function libsVersionsToml(): string {
 	return ts`
 [versions]
-kotlin = "2.3.10"
-kotlinx-datetime = "0.7.1"
-kotlinx-serialization = "1.10.0"
-ktor = "3.4.0"
+kotlin = "2.4.21"
+kotlinx-datetime = "0.8.0"
+kotlinx-serialization = "1.11.0"
+ktor = "3.6.0"
 
 [libraries]
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }

@@ -22,12 +22,14 @@ function findFile(dir: string, name: string): string | undefined {
 }
 
 /** Generate the fixture with the given config and return a reader for the generated files. */
-async function generate(testName: string, config: CodegenConfig): Promise<(name: string) => string> {
-	const result = await prepare(SPEC, { package: 'com.example.api', ...config })
+async function generate(testName: string, config: CodegenConfig, spec = SPEC): Promise<(name: string) => string> {
+	const result = await prepare(spec, { package: 'com.example.api', ...config })
 	let base = ''
 	await testGenerate(result, {
 		testName: `options-${testName}`,
-		postProcess: async(basePath) => { base = basePath },
+		postProcess: async(basePath) => {
+			base = basePath
+		},
 	})
 	return (name: string) => {
 		const file = findFile(base, name)
@@ -100,5 +102,12 @@ describe('android', () => {
 			package: 'com.example.api',
 			android: { compileSdk: 36 },
 		})).rejects.toThrow(/requires the "gradle" option/)
+	})
+})
+
+describe('enumMemberStyle', () => {
+	test('defaults to constant names, without the option', async() => {
+		const read = await generate('enum-member-style-default', {}, 'fixtures/free-form.yml')
+		expect(read('Status.kt')).toContain('data object Active : Status()')
 	})
 })

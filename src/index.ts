@@ -94,7 +94,7 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 	const supportPackage = `${packageName}.support`
 
 	if (config.customTemplates !== undefined) {
-		context.log(CodegenLogLevel.WARN, 'The customTemplates config option is no longer supported: templates are TypeScript code and are customized via the generator\'s typed template APIs')
+		context.log(CodegenLogLevel.WARN, 'The customTemplates config option is no longer supported, because the templates are now TypeScript code in the generator. To change the generated code, fork the generator.')
 	}
 
 	const gradle = configObject(config, 'gradle', undefined)
