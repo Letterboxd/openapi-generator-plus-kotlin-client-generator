@@ -1,5 +1,5 @@
 import { CodegenEnumSchema, CodegenParameter, CodegenParameters, CodegenProperties, CodegenProperty, CodegenSchema } from '@openapi-generator-plus/types'
-import { isEnum } from '@openapi-generator-plus/template-utils'
+import { isDate, isDateTime, isEnum, isString, isTime } from '@openapi-generator-plus/template-utils'
 import * as idx from '@openapi-generator-plus/indexed-type'
 
 /**
@@ -26,6 +26,14 @@ export function parameterValues(parameters: CodegenParameters | null | undefined
 	return parameters ? idx.allValues(parameters) : []
 }
 
+/**
+ * Whether a value of `schema` is text, which JSON writes as a string, such as a date or an enum. A number or
+ * a boolean in a text body is valid JSON as it is, so it isn't text here.
+ */
+export function isTextValue(schema: CodegenSchema): boolean {
+	return isString(schema) || isDate(schema) || isTime(schema) || isDateTime(schema) || (isEnum(schema) && !isNumericEnum(schema))
+}
+
 /** The kind of number of an enum of numbers, whose values JSON writes as numbers, or `null` for any other schema. */
 export function numericEnumKind(schema: CodegenSchema): 'LONG' | 'DOUBLE' | null {
 	const valueType = isEnum(schema) ? (schema as CodegenEnumSchema).enumValueNativeType : null
@@ -50,6 +58,22 @@ export function isNumericEnum(schema: CodegenSchema): boolean {
 export function securitySchemeConstant(name: string): string {
 	const constant = name.toLocaleUpperCase().replace(/[^\p{L}\p{N}_]/gu, '_')
 	return /^\p{N}/u.test(constant) ? `_${constant}` : constant
+}
+
+/** The property of each support date type that parses its text. */
+const SUPPORT_DATE_ACCESSORS: Record<string, string> = {
+	Instant: 'kInstant',
+	LocalDate: 'kLocalDate',
+	LocalTime: 'kLocalTime',
+}
+
+/**
+ * The property that parses the text of `nativeType`, when it's a support date type, or `undefined`. A support date
+ * type holds its text as it is, so a reader of one reads this property to check the text.
+ */
+export function supportDateAccessor(nativeType: string, ctx: { root: { supportPackage: string } }): string | undefined {
+	const supportPrefix = `${ctx.root.supportPackage}.`
+	return nativeType.startsWith(supportPrefix) ? SUPPORT_DATE_ACCESSORS[nativeType.slice(supportPrefix.length)] : undefined
 }
 
 /** The Kotlin Double literal of the number `text`. A whole number needs a decimal point to be a Double literal. */

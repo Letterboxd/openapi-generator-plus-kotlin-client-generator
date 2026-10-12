@@ -615,7 +615,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					return { value: [], literalValue: `listOf<${nativeType.componentType}>()` }
 				case CodegenSchemaType.MAP:
 					/* Initialise empty map properties with an empty map */
-					return { value: {}, literalValue: `mapOf<${nativeType.componentType}>()` }
+					return { value: {}, literalValue: 'mapOf()' }
 				default:
 					return null
 			}
@@ -727,6 +727,8 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				['Types.kt', templates.supportTypes],
 				['URLSerializer.kt', templates.urlSerializer],
 				['UUIDSerializer.kt', templates.uuidSerializer],
+				['SerializersModule.kt', templates.serializersModule],
+				['JsonSerializedForm.kt', templates.jsonSerializedForm],
 			]
 			for (const [fileName, template] of supportFiles) {
 				await emitTemplate(template(modelContext), path.join(outputPath, relativeSourceOutputPath, supportPackagePath, fileName), true)

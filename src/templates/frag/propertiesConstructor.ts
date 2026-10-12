@@ -1,7 +1,6 @@
-import { CodegenObjectSchema, CodegenProperty } from '@openapi-generator-plus/types'
-import { each, Skip, ts, undefinedValueLiteral, when } from '@openapi-generator-plus/template-utils'
+import { CodegenProperty } from '@openapi-generator-plus/types'
+import { each, Skip, stringLiteral, ts, undefinedValueLiteral, when } from '@openapi-generator-plus/template-utils'
 import { KotlinModelContext } from '../types'
-import { propertyValues } from '../helpers'
 import { propertyDocumentation } from './documentation'
 
 /**
@@ -24,13 +23,13 @@ function parameterLine(p: CodegenProperty, ctx: KotlinModelContext): string {
 
 /**
  * The primary-constructor parameters of a class: one annotated parameter per
- * property, separated by blank lines. Returns SKIP when the schema has no
+ * property, separated by blank lines. Returns SKIP when there are no
  * properties.
  */
-export function propertiesConstructor(schema: CodegenObjectSchema, ctx: KotlinModelContext): string | Skip {
-	return each(propertyValues(schema.properties), p => ts`
+export function propertiesConstructor(properties: CodegenProperty[], ctx: KotlinModelContext): string | Skip {
+	return each(properties, p => ts`
 ${propertyDocumentation(p)}
 ${when(p.deprecated, '@kotlin.Deprecated(message = "This property is deprecated.")')}
-@kotlinx.serialization.SerialName(value = "${p.serializedName}")
+@kotlinx.serialization.SerialName(value = ${stringLiteral(ctx.generatorContext, p.serializedName)})
 ${parameterLine(p, ctx)}`, '\n\n')
 }

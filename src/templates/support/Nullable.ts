@@ -18,7 +18,7 @@ import kotlinx.serialization.descriptors.nullable
  * Contains a value that may be explicitly set to \`null\` when sent via the API.
  */
 @kotlinx.serialization.Serializable(with = Nullable.Serializer::class)
-sealed class Nullable<out T> {
+sealed class Nullable<out T>${root.isJavaSerializable ? ' : java.io.Serializable' : ''} {
     data class Some<T>(val value: T): Nullable<T>()
     data object Null: Nullable<Nothing>()
 
