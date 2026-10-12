@@ -721,6 +721,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			const supportPackagePath = packageToPath(generatorOptions.supportPackage)
 			const supportFiles: [string, (ctx: KotlinModelContext) => string][] = [
 				['APIException.kt', templates.apiException],
+				['APIResponse.kt', templates.apiResponse],
 				['Configuration.kt', templates.configuration],
 				['DateTime.kt', templates.dateTime],
 				['Nullable.kt', templates.nullable],

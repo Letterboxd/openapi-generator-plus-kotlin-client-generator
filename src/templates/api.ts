@@ -17,13 +17,23 @@ export function api(group: CodegenOperationGroup, ctx: KotlinModelContext): stri
 package ${root.apiPackage}
 
 import ${root.securityPackage}.requestData
-import io.ktor.client.call.body
+import ${root.supportPackage}.checkContentType
+import ${root.supportPackage}.decodeBinaryBody
+import ${root.supportPackage}.decodeBinaryBodyAs
+import ${root.supportPackage}.decodeJsonBody
+import ${root.supportPackage}.decodeTextBody
+import ${root.supportPackage}.requiredResponseHeader
+import ${root.supportPackage}.requiredResponseHeaderList
+import ${root.supportPackage}.responseHeader
+import ${root.supportPackage}.responseHeaderList
 /** TODO: Only import the request types that are used by this API. */
 import io.ktor.client.request.*
-import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLParameter
+import io.ktor.http.formUrlEncode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.serializer
 
 open class ${group.name}Api(
     val configuration: ${root.supportPackage}.Configuration
