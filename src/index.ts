@@ -393,20 +393,12 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				case CodegenSchemaType.FILE: {
 					return new context.NativeType(generatorOptions.binaryRepresentation)
 				}
-				case CodegenSchemaType.ANY: {
-					return new context.NativeType('kotlin.Any', {
-						info: {
-							serialized: '@kotlinx.serialization.Contextual kotlin.Any',
-						},
-					})
-				}
-				case CodegenSchemaType.NULL: {
-					return new context.NativeType('kotlin.Any', {
-						info: {
-							serialized: '@kotlinx.serialization.Contextual kotlin.Any',
-						},
-					})
-				}
+				case CodegenSchemaType.ANY:
+					/* A value of any type, which we keep as the JSON that it arrived as */
+					return new context.NativeType('kotlinx.serialization.json.JsonElement')
+				case CodegenSchemaType.NULL:
+					/* The JSON Schema null type permits exactly one value, so we use a type that can only hold that value */
+					return new context.NativeType('kotlinx.serialization.json.JsonNull')
 			}
 
 			throw new Error(`Unsupported schema type: ${schemaType}`)
