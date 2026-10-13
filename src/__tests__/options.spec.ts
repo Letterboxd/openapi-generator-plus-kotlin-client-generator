@@ -111,3 +111,13 @@ describe('enumMemberStyle', () => {
 		expect(read('Status.kt')).toContain('data object Active : Status()')
 	})
 })
+
+describe('enum members', () => {
+	test('never match a nested class of the enum in any case', async() => {
+		const read = await generate('enum-case', { enumMemberStyle: 'constant' }, 'fixtures/enum-case.yml')
+		const names = [...read('Thing.kt').matchAll(/(?:data object|data class|object) (\w+)/g)].map(match => match[1])
+		const lowerCase = names.map(name => name.toLowerCase())
+		expect(new Set(lowerCase).size).toBe(lowerCase.length)
+		expect(names).toContain('KNOWN')
+	})
+})

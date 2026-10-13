@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info:
+  title: Enum members that differ from nested classes only in case
+  version: 1.0.0
+paths:
+  /things:
+    get:
+      operationId: getThing
+      responses:
+        '200':
+          description: A thing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: [KNOWN, UNKNOWN, SERIALIZER]
+      required: [code]

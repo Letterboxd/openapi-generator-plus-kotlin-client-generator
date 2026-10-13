@@ -91,6 +91,9 @@ const RESERVED_WORDS = [
 	'Serializer', // for the serializers that our enums and oneOfs nest
 ]
 
+/** The classes that the generated enums nest beside their members, in lower case. */
+const NESTED_CLASS_NAMES = ['unknown', 'serializer']
+
 export function options(config: CodegenConfig, context: KotlinGeneratorContext): CodegenOptionsKotlin {
 	const packageName = configString(config, 'package', 'com.example')
 	const apiPackage = configString(config, 'apiPackage', packageName)
@@ -183,10 +186,21 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 
 	const baseGenerator = context.baseGenerator(config, context)
 	const aCommonGenerator = commonGenerator(config, context)
+	const aJavaLikeGenerator = javaLikeGenerator(config, createJavaLikeContext(context))
 	return {
 		...baseGenerator,
 		...aCommonGenerator,
-		...javaLikeGenerator(config, createJavaLikeContext(context)),
+		...aJavaLikeGenerator,
+		toEnumMemberName: (name) => {
+			const result = aJavaLikeGenerator.toEnumMemberName(name)
+			/* Each enum member is a class nested in the enum, beside the enum's own nested classes. Class
+			   files whose names differ only in case replace each other on a file system that ignores case,
+			   such as macOS's, so a member must not match one of those names in any case. */
+			if (NESTED_CLASS_NAMES.includes(result.toLowerCase())) {
+				return aJavaLikeGenerator.toEnumMemberName(`a_${name}`)
+			}
+			return result
+		},
 		toLiteral: (value, options) => {
 			if (value === undefined) {
 				const defaultValue = context.generator().defaultValue(options)
