@@ -1,5 +1,53 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 2.0.0
+
+### Major Changes
+
+- 359169c: Represent a value of any type as `kotlinx.serialization.json.JsonElement`, and the JSON Schema null type as `JsonNull`.
+
+  These were `@Contextual kotlin.Any`, which has no serializer unless a caller registers one, so decoding them failed at run time. A map of any values, such as `additionalProperties: true`, is now a `Map<String, JsonElement>`. The generated `build.gradle.kts` now exposes `kotlinx-serialization-json` as an `api` dependency, as the generated types use it.
+
+- b3e1365: Keep a discriminator property in the model of the schema that declares it, and fix a member's value to its type.
+
+  A member of a discriminator now declares the discriminator property in its class body with its own value, rather than as a constructor parameter, and always writes it. A oneOf no longer removes the discriminator property before it decodes a member that declares it, so such a member can be decoded. A boolean discriminator is written as a boolean. The `Unknown` member of a oneOf now carries the discriminator value as a `String`, whatever the discriminator's type. A oneOf without a discriminator now decodes by trying each member in turn, and encodes a member that isn't an object.
+
+- 4e79b73: Write an enum of numbers as JSON numbers, and look up enum literals by value.
+
+  - An enum of integers or numbers is now written as JSON numbers, such as `{"level":2}`, rather than as strings, and its serializer declares a number kind. It reads a value written as a number or as text, and matches it as a number, such as `1.0` for `1`.
+  - An enum default and a discriminator value are now written as `Type.valueOf("value")`, rather than as a member name, because core makes the names of the members unique. A default that isn't one of the enum's values now becomes `Unknown` when it's used, rather than failing to compile.
+  - A oneOf without a discriminator decodes a value into an enum member that knows it first. A value that no member knows goes to the first enum member of its shape, as that enum's `Unknown`. An enum of numbers only reads JSON numbers there.
+
+- 0e00a42: Give a caller the headers of a response, and refuse a response that breaks the operation's contract.
+
+  - A response that declares headers carries them in its result class, as typed properties beside `value`. A response with no content that declares headers is now a data class rather than a data object.
+  - Refuse a response body that arrives without the declared `Content-Type`, or with an empty body, or with a header that the API requires but the response leaves out or that doesn't parse, with `APIException.InvalidResponse`, whose new `cause` says why.
+  - Encode request bodies and decode response bodies with the new `Configuration.json`. The API client no longer installs the content negotiation plugin, which added `application/json` to every `Accept` header. A text body of a date, an enum or another text type is read through its serializer, and a binary body of a `binaryRepresentation` other than `ByteArray` is read as that type.
+  - Read a range response, such as `4XX`, for the codes in its range. Its result class, and the `Default` result class, carry the `status` code that the server sent, so `Default` is now a data class rather than a data object.
+
+### Minor Changes
+
+- b3e1365: Keep the members of an object schema that describes no properties.
+
+  An object schema without properties permits any properties, but its class had no properties, so decoding it discarded every member of the object. The class is now a data class with an `additionalProperties` map of `JsonElement` that holds them, and it encodes them again.
+
+- 0e00a42: Send every parameter and request body the way the specification declares it.
+
+  - Write query parameters in their declared style: form (exploded or not), space and pipe delimited, and deepObject, for arrays and objects.
+  - Send header and cookie parameters, which the client dropped.
+  - Write path parameters in their declared style: simple, label or matrix. Percent encode each value, but not the delimiters between them.
+  - Percent encode each cookie value, but not the delimiters between them.
+  - Write a map or a free-form object parameter, or form body, entry by entry.
+  - Encode a `application/x-www-form-urlencoded` body, a `multipart/form-data` body, a text body and a binary body in their own format, rather than as JSON. A null form property or part is written as the format allows. A file part has a filename, and a part has the headers that its encoding declares.
+  - Send an `Accept` header with the media types that the operation's responses declare.
+  - Call `Configuration.finalizeRequestBlock`, which the client ignored.
+  - Send the `Basic` scheme name in the `Authorization` header from `BasicAuthenticationSecurityClient`.
+  - Rethrow a coroutine's `CancellationException`, rather than returning it as a failure.
+
+### Patch Changes
+
+- 2fa9bf5: Fix the default `enumMemberStyle`, which failed with "Unsupported enumMemberStyle: contant" unless the config set the option. Upgrade `@openapi-generator-plus/java-like-generator-helper`, `generator-common` and `template-utils`.
+
 ## 1.0.0
 
 ### Major Changes
