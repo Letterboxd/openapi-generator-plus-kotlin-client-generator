@@ -29,7 +29,7 @@ class BasicAuthenticationSecurityClient(
     override suspend fun authorize(
         requestBuilder: HttpRequestBuilder, securityScheme: SecurityScheme, scopes: List<String>?
     ) = runCatching {
-        requestBuilder.header("Authorization", "$username:$password".encodeBase64())
+        requestBuilder.header("Authorization", "Basic \${"$username:$password".encodeBase64()}")
     }
 }
 `

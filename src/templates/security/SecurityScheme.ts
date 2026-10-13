@@ -1,7 +1,8 @@
 import { CodegenOAuthFlow } from '@openapi-generator-plus/types'
-import { each, identifier, stringLiteral, ts, upperCase, when } from '@openapi-generator-plus/template-utils'
+import { each, identifier, stringLiteral, ts, when } from '@openapi-generator-plus/template-utils'
 import { KotlinModelContext } from '../types'
 import { generatedBy } from '../frag/generatedBy'
+import { securitySchemeConstant } from '../helpers'
 
 /**
  * A factory extension function that creates one of the OAuth flow clients with
@@ -28,8 +29,8 @@ fun ${clientClass}.Companion.${identifier(generator, schemeName)}Client(
 ): ${clientClass} = ${clientClass}(
     clientId = clientId,
     clientSecret = clientSecret,
-${when(flow.refreshUrl, () => `    refreshURL = java.net.URL("${flow.refreshUrl}"),`)}
-    tokenURL = java.net.URL("${flow.tokenUrl ?? ''}"),${extraArguments}
+${when(flow.refreshUrl, () => `    refreshURL = java.net.URL(${stringLiteral(ctx.generatorContext, flow.refreshUrl!)}),`)}
+    tokenURL = java.net.URL(${stringLiteral(ctx.generatorContext, flow.tokenUrl ?? '')}),${extraArguments}
     autoRefreshInterval = autoRefreshInterval,
     accessTokenDidChange = accessTokenDidChange,
     httpClientConfig = httpClientConfig
@@ -42,7 +43,7 @@ export function securityScheme(ctx: KotlinModelContext): string {
 	const securitySchemes = root.securitySchemes && root.securitySchemes.length ? root.securitySchemes : null
 
 	const cases = securitySchemes
-		? each(securitySchemes, (scheme, index, isFirst, isLast) => `    ${upperCase(scheme.name)}(${stringLiteral(ctx.generatorContext, scheme.name)})${isLast ? ';' : ','}`, '\n')
+		? each(securitySchemes, (scheme, index, isFirst, isLast) => `    ${securitySchemeConstant(scheme.name)}(${stringLiteral(ctx.generatorContext, scheme.name)})${isLast ? ';' : ','}`, '\n')
 		: ts`
     /** No security schemes were specified. This case is a placeholder so the sealed class is valid. */
     UNSPECIFIED("unspecified");`
@@ -83,7 +84,7 @@ ${cases}
 				result += flowClientFactory('OAuthClientCredentialsFlowClient', scheme.name, flow, '', ctx) + '\n'
 			}
 			if (flow.type === 'authorizationCode' && flow.authorizationUrl) {
-				result += flowClientFactory('OAuthAuthorizationCodeFlowClient', scheme.name, flow, `\n    authorizationURL = java.net.URL("${flow.authorizationUrl}"),`, ctx) + '\n'
+				result += flowClientFactory('OAuthAuthorizationCodeFlowClient', scheme.name, flow, `\n    authorizationURL = java.net.URL(${stringLiteral(ctx.generatorContext, flow.authorizationUrl)}),`, ctx) + '\n'
 			}
 			if (flow.type === 'implicit') {
 				result += '// TODO: Generate the implicit flow client\n'

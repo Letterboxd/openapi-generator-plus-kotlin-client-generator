@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Binary bodies
+  version: '1.0'
+paths:
+  /files:
+    post:
+      operationId: postFile
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary

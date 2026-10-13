@@ -12,3 +12,4 @@ tsconfig.*
 /pnpm-lock.yaml
 /src/__tests__
 /test-output
+/conformance

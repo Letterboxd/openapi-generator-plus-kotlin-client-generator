@@ -16,6 +16,8 @@ function modelFile(content: string, ctx: KotlinModelContext): string {
 
 package ${ctx.root.modelPackage}
 
+import kotlinx.serialization.serializer
+
 ${content}
 `
 }

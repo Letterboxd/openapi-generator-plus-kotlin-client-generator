@@ -1,0 +1,54 @@
+openapi: 3.0.3
+info:
+  title: Edge cases
+  description: Enum defaults, primitive oneOf members, nested hierarchies and comments that hold /* text.
+  version: '1.0'
+paths:
+  /things:
+    post:
+      operationId: postThing
+      description: Accepts image/* uploads.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Thing'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      description: Holds image/* types.
+      properties:
+        status:
+          type: string
+          enum: [in_progress, done]
+          default: in_progress
+        value:
+          oneOf:
+            - type: string
+            - type: integer
+        nested:
+          type: object
+          properties:
+            shape:
+              type: object
+              discriminator:
+                propertyName: kind
+              properties:
+                kind:
+                  type: string
+            square:
+              allOf:
+                - $ref: '#/components/schemas/Thing/properties/nested/properties/shape'
+                - type: object
+                  properties:
+                    side:
+                      type: integer

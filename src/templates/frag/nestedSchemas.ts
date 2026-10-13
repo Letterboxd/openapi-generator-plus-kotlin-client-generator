@@ -1,4 +1,4 @@
-import { CodegenSchema, CodegenSchemas, isCodegenEnumSchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
+import { CodegenSchema, CodegenSchemas, isCodegenEnumSchema, isCodegenHierarchySchema, isCodegenInterfaceSchema, isCodegenObjectSchema, isCodegenOneOfSchema } from '@openapi-generator-plus/types'
 import * as idx from '@openapi-generator-plus/indexed-type'
 import { each, Skip, SKIP } from '@openapi-generator-plus/template-utils'
 import { KotlinModelContext } from '../types'
@@ -21,7 +21,7 @@ export function nestedSchemas(scope: { schemas: CodegenSchemas | null }, ctx: Ko
 			return interfaceFrag(schema, ctx)
 		} else if (isCodegenObjectSchema(schema)) {
 			return pojoFrag(schema, ctx)
-		} else if (isCodegenOneOfSchema(schema)) {
+		} else if (isCodegenOneOfSchema(schema) || isCodegenHierarchySchema(schema)) {
 			return oneOfFrag(schema, ctx)
 		} else {
 			return SKIP

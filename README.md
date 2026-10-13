@@ -13,14 +13,15 @@ These options can be supplied in your `config.yml` (or equivalent) under the gen
 | `modelPackage` | string | `{package}.model` | Package for the generated model classes. |
 | `supportPackage` | string | `{package}.support` | Package for the generated support classes (serializers, configuration, etc.). |
 | `securityPackage` | string | `{package}.security` | Package for the generated security classes. |
-| `customTemplates` | string | _(none)_ | Path (relative to the config file) to a directory of custom Handlebars templates that override the built-in ones. |
 | `hideGenerationTimestamp` | boolean | `false` | Omit the generation timestamp from the generated code. |
-| `dateImplementation` | string | `{supportPackage}.LocalDate` | Kotlin type used for the `date` string format. |
-| `timeImplementation` | string | `{supportPackage}.LocalTime` | Kotlin type used for the `time` string format. |
-| `dateTimeImplementation` | string | `{supportPackage}.Instant` | Kotlin type used for the `date-time` string format. |
+| `dateImplementation` | string | `{supportPackage}.LocalDate` | Kotlin type used for the `date` string format. The type must have a constructor with a `value: String` parameter, which the client uses for default values and response headers. |
+| `timeImplementation` | string | `{supportPackage}.LocalTime` | Kotlin type used for the `time` string format. The type must have a constructor with a `value: String` parameter, which the client uses for default values and response headers. |
+| `dateTimeImplementation` | string | `{supportPackage}.Instant` | Kotlin type used for the `date-time` string format. The type must have a constructor with a `value: String` parameter, which the client uses for default values and response headers. |
 | `binaryRepresentation` | string | `kotlin.ByteArray` | Kotlin type used for binary / file data. |
 | `urlImplementation` | string \| object | `java.net.URL` | Kotlin type used for the `url` string format. See [URL implementation](#url-implementation) below. |
 | `isJavaSerializable` | boolean | `true` | Make generated models implement `java.io.Serializable`. |
+| `constantStyle` | string | `pascalCase` | The style of constant names: `allCapsSnake`, `allCaps`, `camelCase` or `pascalCase`. |
+| `enumMemberStyle` | string | `constant` | The style of enum member names: `constant` (follow `constantStyle`) or `preserve`. |
 | `gradle` | object | _(none)_ | When present, generate `build.gradle.kts`, `settings.gradle.kts` and `gradle/libs.versions.toml`. See [Gradle](#gradle) below. |
 | `android` | object | _(none)_ | When present, generate `build.gradle.kts` as an Android library module instead of a `kotlin("jvm")` library. See [Android library module](#android-library-module) below. |
 
@@ -116,6 +117,42 @@ dependencies {
 >
 > The generated `build.gradle.kts` references version-catalog aliases such as `libs.plugins.android.library` and `libs.versions.android.compileSdk`. These are **not** declared in the generator's default `gradle/libs.versions.toml`, so you must define them yourself. We recommend managing all versions, libraries, and plugins through a [Gradle version catalog](https://docs.gradle.org/current/userguide/version_catalogs.html) (`gradle/libs.versions.toml`) in your project — this keeps versions consistent across the generated module and the rest of your build, and lets the generated references (`libs.plugins.*` / `libs.versions.*`) resolve.
 
+## Free-form objects and values of any type
+
+An object schema that describes no properties (`type: object`, with no `properties`) permits any
+properties. The generator makes it a data class that keeps every member of the object in
+`additionalProperties`, and that encodes and decodes as the JSON object itself:
+
+```kotlin
+@kotlinx.serialization.Serializable(with = Content.Serializer::class)
+data class Content(
+
+    /** The members of the object. The specification describes no properties for it, so it may hold any. */
+    val additionalProperties: kotlin.collections.Map<kotlin.String, kotlinx.serialization.json.JsonElement> = emptyMap(),
+
+) {
+    /** The members of the object as a [kotlinx.serialization.json.JsonObject]. */
+    fun toJsonObject(): kotlinx.serialization.json.JsonObject = kotlinx.serialization.json.JsonObject(additionalProperties)
+    // …
+}
+```
+
+A schema that permits a value of any type (`{}`) is a `kotlinx.serialization.json.JsonElement`, and a
+map of any values (`additionalProperties: true` or `additionalProperties: {}`) is a
+`Map<String, JsonElement>`.
+
+## Responses
+
+Each operation returns a `Result` of a sealed class with a member for each documented response,
+named after its status code. A member carries the decoded body as `value`, and each header that the
+specification declares on the response as a typed property. A response with an undocumented status
+fails with `APIException.UnexpectedResponse`. A response that doesn't declare the documented
+`Content-Type`, whose body doesn't decode, or that leaves out a required header, fails with
+`APIException.InvalidResponse`, whose `cause` says why.
+
+The API classes encode and decode JSON with `Configuration.json`. Change it with the
+`jsonBuilder` option of `Configuration`.
+
 ## Development
 
 To use this library in development we use the `link` command.
@@ -140,6 +177,28 @@ Then in your target project run
 ```
 pnpm link --global @openapi-generator-plus/kotlin-client-generator
 ```
+
+## Testing
+
+```
+pnpm test
+```
+
+The tests need a JDK and `gradle` on the `PATH`, and network access for Gradle to download the
+dependencies of the generated projects.
+
+* `src/__tests__/compile.spec.ts` generates a client for each specification in `__tests__/specs`, and in
+  `../openapi-generator-plus-generators/__tests__/specs` (or `test-input/__tests__/specs` in CI), and
+  builds it with `gradle build`.
+* `src/__tests__/conformance.spec.ts` runs the
+  [client conformance suite](https://github.com/karlvr/openapi-generator-plus-generators/tree/master/packages/client-conformance)
+  from `@openapi-generator-plus/client-conformance`. For each suite it generates a client, adds the
+  Kotlin driver in `conformance/` to the generated project, and runs the driver against a recording
+  server. The driver is `conformance/driver.ts`, with a shared `harness.kt` and an entry file for each
+  suite, named after the suite id. Run it on its own with
+  `pnpm jest src/__tests__/conformance.spec.ts`.
+* `src/__tests__/free-form.spec.ts` decodes and encodes JSON with the models of a generated client.
+* `src/__tests__/options.spec.ts` checks the configuration options.
 
 ## Limitations
 - This library uses Ktor with OkHttp engine for making network calls. Thus, it follows the current compatibility of OkHttp engines in Ktor, which are JVM and Android.
@@ -168,7 +227,7 @@ There are two approaches you can take when implementing the generated API into a
 kotlin = "{latest_version that is >= 1.9.22}"
 kotlinx-datetime = "{latest_version that is >= 0.5.0}"
 kotlinx-serialization = "{latest_version that is >= 1.6.2}"
-ktor = "{latest_version that is >= 2.3.7}"
+ktor = "{latest_version that is >= 3.0.0}"
 
 [libraries]
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
@@ -218,7 +277,7 @@ implementation(project(":{api_folder}"))
 kotlin = "{latest_version that is >= 1.9.22}"
 kotlinx-datetime = "{latest_version that is >= 0.5.0}"
 kotlinx-serialization = "{latest_version that is >= 1.6.2}"
-ktor = "{latest_version that is >= 2.3.7}"
+ktor = "{latest_version that is >= 3.0.0}"
 
 [libraries]
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }

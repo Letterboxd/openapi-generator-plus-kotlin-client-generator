@@ -1,0 +1,642 @@
+openapi: 3.0.3
+info:
+  title: Parameter styles, response headers and oneOf members
+  description: Cases that the generated client must compile and put on the wire correctly.
+  version: '1.0'
+paths:
+  /items/{ids}/{filter}/{label}/{matrix}/{name}:
+    get:
+      operationId: getItems
+      tags: [items]
+      parameters:
+        - name: ids
+          in: path
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: filter
+          in: path
+          required: true
+          explode: true
+          schema:
+            $ref: '#/components/schemas/Filter'
+        - name: label
+          in: path
+          required: true
+          style: label
+          schema:
+            type: array
+            items:
+              type: string
+        - name: matrix
+          in: path
+          required: true
+          style: matrix
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tags
+          in: cookie
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '204':
+          description: No content
+  /form:
+    post:
+      operationId: postForm
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                tag_ids:
+                  type: array
+                  items:
+                    type: string
+            encoding:
+              tag_ids:
+                style: form
+                explode: false
+      responses:
+        '204':
+          description: No content
+  /headers:
+    get:
+      operationId: getHeaders
+      tags: [items]
+      responses:
+        '200':
+          description: OK
+          headers:
+            Value:
+              schema:
+                type: string
+            value:
+              schema:
+                type: string
+            Location:
+              schema:
+                type: string
+                format: url
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Filter'
+  /pets:
+    post:
+      operationId: postPet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+  /shapes:
+    get:
+      operationId: getShape
+      tags: [pets]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shape'
+  /search:
+    get:
+      operationId: search
+      tags: [items]
+      description: Free-form objects in the query. A description that holds */ must not end the comment.
+      parameters:
+        - name: free
+          in: query
+          schema:
+            $ref: '#/components/schemas/Free'
+        - name: deep
+          in: query
+          style: deepObject
+          schema:
+            $ref: '#/components/schemas/Free'
+      responses:
+        '200':
+          description: OK */
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Filter'
+        '401':
+          description: Not allowed, which the client leaves out of the responses, as the Swift client does
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Filter'
+  /expires:
+    get:
+      operationId: getExpires
+      tags: [items]
+      responses:
+        '204':
+          description: No content
+          headers:
+            X-Expires:
+              required: true
+              schema:
+                type: string
+                format: date-time
+  /tagged:
+    post:
+      operationId: postTagged
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tagged'
+      responses:
+        '204':
+          description: No content
+  /vehicles:
+    post:
+      operationId: postVehicle
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Vehicle'
+      responses:
+        '204':
+          description: No content
+  /other-vehicles:
+    post:
+      operationId: postOtherVehicle
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtherVehicle'
+      responses:
+        '204':
+          description: No content
+  /upload:
+    post:
+      operationId: upload
+      tags: [items]
+      parameters:
+        - name: q
+          in: query
+          schema: {}
+        - name: prefs
+          in: cookie
+          schema:
+            type: object
+            properties:
+              a b:
+                type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                meta:
+                  $ref: '#/components/schemas/Filter'
+                image:
+                  type: string
+                  format: binary
+            encoding:
+              meta:
+                contentType: application/vnd.api+json
+              image:
+                contentType: image/png, image/jpeg
+              file:
+                headers:
+                  X-Part-Id:
+                    schema:
+                      type: string
+      responses:
+        '204':
+          description: No content
+  /map-query:
+    post:
+      operationId: mapQuery
+      tags: [items]
+      parameters:
+        - name: m
+          in: query
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Free'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: date-time
+  /odd:
+    get:
+      operationId: getOdd
+      tags: [pets]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Odd'
+  /scalars:
+    post:
+      operationId: postScalars
+      tags: [items]
+      parameters:
+        - name: id
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: integer
+        - name: holder
+          in: query
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: integer
+      responses:
+        '204':
+          description: No content
+  /nullables:
+    get:
+      operationId: getNullables
+      tags: [items]
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              nullable: true
+        - name: m
+          in: query
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+              nullable: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ident'
+  /secured:
+    get:
+      operationId: getSecured
+      tags: [items]
+      security:
+        - api-key: []
+      responses:
+        '204':
+          description: No content
+  /mixed:
+    post:
+      operationId: postMixed
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          multipart/mixed:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Tags:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  type: string
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Ids'
+  /xml:
+    post:
+      operationId: postXml
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/Filter'
+      responses:
+        '204':
+          description: No content
+  /range:
+    get:
+      operationId: getRange
+      tags: [items]
+      responses:
+        '4XX':
+          description: A client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Filter'
+        '404':
+          description: Not found
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdValue'
+components:
+  securitySchemes:
+    api-key:
+      type: apiKey
+      in: header
+      name: X-Key
+  schemas:
+    Filter:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        size:
+          type: integer
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: '#/components/schemas/Cat'
+          kitty: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    Cat:
+      type: object
+      properties:
+        petType:
+          type: string
+          enum: [cat, kitty]
+        name:
+          type: string
+    Dog:
+      type: object
+      required: [petType]
+      properties:
+        petType:
+          type: string
+          enum: [dog]
+        bark:
+          type: string
+    Shape:
+      oneOf:
+        - $ref: '#/components/schemas/Loose'
+        - $ref: '#/components/schemas/Strict'
+    Loose:
+      type: object
+      properties:
+        a:
+          type: string
+    Strict:
+      type: object
+      required: [b]
+      properties:
+        b:
+          type: integer
+    Free:
+      type: object
+    Tagged:
+      type: object
+      description: A schema whose names need escaping */ in Kotlin.
+      properties:
+        $type:
+          type: string
+          description: A .NET style type name */
+        weird:
+          $ref: '#/components/schemas/Weird'
+    Weird:
+      type: string
+      enum: ['a$b', 'q"x']
+    Vehicle:
+      oneOf:
+        - $ref: '#/components/schemas/Car'
+        - $ref: '#/components/schemas/Bike'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '1': '#/components/schemas/Car'
+          '2': '#/components/schemas/Bike'
+    OtherVehicle:
+      oneOf:
+        - $ref: '#/components/schemas/Car'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '3': '#/components/schemas/Car'
+    Car:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: integer
+        seats:
+          type: integer
+    Bike:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: integer
+    Odd:
+      oneOf:
+        - $ref: '#/components/schemas/Unknown'
+        - $ref: '#/components/schemas/Serializer'
+    Unknown:
+      type: object
+      required: [u]
+      properties:
+        u:
+          type: string
+    Serializer:
+      type: object
+      required: [s]
+      properties:
+        s:
+          type: integer
+    Ident:
+      oneOf:
+        - $ref: '#/components/schemas/Filter'
+        - type: string
+          format: uuid
+    Ids:
+      oneOf:
+        - type: string
+          format: uuid
+        - type: array
+          items:
+            type: string
+            format: uuid
+    IdValue:
+      oneOf:
+        - type: integer
+        - type: string
+    AnyHolder:
+      type: object
+      properties:
+        extra: {}
+        free:
+          $ref: '#/components/schemas/Free'
+    NullableHolder:
+      type: object
+      properties:
+        n:
+          type: string
+          nullable: true
+        m:
+          $ref: '#/components/schemas/Mixed'
+    Mixed:
+      oneOf:
+        - type: integer
+        - {}
+    When:
+      oneOf:
+        - type: string
+          format: date
+        - type: string
+          format: date-time
+        - type: string
+    Level:
+      type: integer
+      enum: [1, 2, 3]
+    LevelHolder:
+      type: object
+      required: [level]
+      properties:
+        level:
+          $ref: '#/components/schemas/Level'
+    Gadget:
+      oneOf:
+        - $ref: '#/components/schemas/Phone'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '1': '#/components/schemas/Phone'
+    OtherGadget:
+      oneOf:
+        - $ref: '#/components/schemas/Phone'
+      discriminator:
+        propertyName: kind
+        mapping:
+          '2': '#/components/schemas/Phone'
+    Phone:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: '#/components/schemas/Level'
+    Sign:
+      type: integer
+      enum: [-1, 0, 1, 2]
+    Figure:
+      oneOf:
+        - $ref: '#/components/schemas/Circle'
+      discriminator:
+        propertyName: sign
+        mapping:
+          '1': '#/components/schemas/Circle'
+    Circle:
+      type: object
+      required: [sign]
+      properties:
+        sign:
+          $ref: '#/components/schemas/Sign'
+    Ratio:
+      type: object
+      properties:
+        ratio:
+          type: number
+          default: 1
+    LevelOrCount:
+      oneOf:
+        - $ref: '#/components/schemas/Level'
+        - type: integer
+    Tone:
+      type: integer
+      enum: [10, 20]
+    ToneHolder:
+      type: object
+      properties:
+        tone:
+          $ref: '#/components/schemas/Tone'
+    WeirdOrFilter:
+      oneOf:
+        - $ref: '#/components/schemas/Weird'
+        - $ref: '#/components/schemas/Filter'
+    WeirdOrTone:
+      oneOf:
+        - $ref: '#/components/schemas/Weird'
+        - $ref: '#/components/schemas/Tone'

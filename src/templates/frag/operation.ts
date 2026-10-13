@@ -1,10 +1,13 @@
-import { CodegenOperation, CodegenOperationGroup, CodegenSchemaType, CodegenSecurityRequirementScheme } from '@openapi-generator-plus/types'
+import { CodegenOperation, CodegenOperationGroup, CodegenResponse, CodegenSecurityRequirementScheme } from '@openapi-generator-plus/types'
 import * as idx from '@openapi-generator-plus/indexed-type'
-import { className, identifier, indent, stringLiteral, upperCase } from '@openapi-generator-plus/template-utils'
+import { className, identifier, indent, stringLiteral } from '@openapi-generator-plus/template-utils'
 import { KotlinModelContext } from '../types'
-import { parameterValues, stripLeadingSlash } from '../helpers'
+import { parameterValues, securitySchemeConstant, stripLeadingSlash } from '../helpers'
 import { operationDocumentation } from './documentation'
 import { parametersStruct } from './parametersStruct'
+import { pathParameterValue, requestParameter } from './requestParameter'
+import { requestBody } from './requestBody'
+import { acceptHeader, responseClass, responseHeaderMembers, responseRange, responseResult } from './responses'
 
 /** The scopes of a security requirement scheme as an inline Kotlin expression. */
 function scopesExpression(scheme: CodegenSecurityRequirementScheme, ctx: KotlinModelContext): string {
@@ -12,28 +15,6 @@ function scopesExpression(scheme: CodegenSecurityRequirementScheme, ctx: KotlinM
 		return `listOf(${scheme.scopes.map(scope => stringLiteral(ctx.generatorContext, scope.name)).join(', ')})`
 	}
 	return 'null'
-}
-
-/** The `url { }` block that applies the operation's query parameters to the request. */
-function requestParameter(operation: CodegenOperation): string {
-	let result = '// Set request parameters\nurl {\n'
-	for (const p of parameterValues(operation.queryParams)) {
-		if (p.schema.schemaType === CodegenSchemaType.ARRAY) {
-			result += `    ${p.name}${p.required ? '' : '?'}.forEach { parameters.append("${p.serializedName}", "$it") }\n`
-		} else if (p.required) {
-			result += `    parameters.append("${p.serializedName}", "$${p.name}")\n`
-		} else {
-			result += `    ${p.name}?.let { parameters.append("${p.serializedName}", "$it") }\n`
-		}
-	}
-	result += '}'
-	return result
-}
-
-/** The statements that apply the operation's request body to the request. */
-function requestBody(operation: CodegenOperation): string {
-	const body = operation.requestBody!
-	return `// Set request body\ncontentType(ContentType.parse("${body.defaultContent.mediaType.mimeType}"))\nsetBody(requestBody)`
 }
 
 /**
@@ -56,7 +37,7 @@ function requestAuthentication(operation: CodegenOperation, securityScheme: stri
 		result += '        configuration.securityClient?.let { securityClient ->\n'
 		requirement.schemes.forEach((scheme, schemeIndex) => {
 			const scopes = scopesExpression(scheme, ctx)
-			const schemeName = `${securityScheme}.${upperCase(scheme.scheme.name)}`
+			const schemeName = `${securityScheme}.${securitySchemeConstant(scheme.scheme.name)}`
 			result += `            // ${scheme.scheme.name}\n`
 			result += '            securityClient.authorize(\n'
 			result += '                requestBuilderToBeAuthed,\n'
@@ -106,6 +87,71 @@ function requestAuthentication(operation: CodegenOperation, securityScheme: stri
 }
 
 /**
+ * The statements that add the operation's query, header and cookie parameters, its `Accept` header
+ * and its request body to the request, in the request builder.
+ */
+function requestContent(op: CodegenOperation, ctx: KotlinModelContext): string[] {
+	const generator = ctx.generatorContext.generator()
+	const sections: string[] = []
+
+	const queryParams = parameterValues(op.queryParams)
+	if (queryParams.length) {
+		let section = '// Set query parameters\n'
+		section += 'val localVarQuery = mutableListOf<Pair<String, String>>()\n'
+		for (const p of queryParams) {
+			section += requestParameter(p, { dest: 'localVarQuery', value: identifier(generator, p.name), encoding: p.encoding }, ctx) + '\n'
+		}
+		section += 'localVarQuery.forEach { this.url.parameters.append(it.first, it.second) }'
+		sections.push(section)
+	}
+
+	const accept = acceptHeader(op)
+	const headerParams = parameterValues(op.headerParams)
+	if (accept || headerParams.length) {
+		let section = '// Set headers\n'
+		if (accept) {
+			section += `this.headers.append(io.ktor.http.HttpHeaders.Accept, ${stringLiteral(ctx.generatorContext, accept)})\n`
+		}
+		if (headerParams.length) {
+			section += 'val localVarHeaders = mutableListOf<Pair<String, String>>()\n'
+			for (const p of headerParams) {
+				section += requestParameter(p, { dest: 'localVarHeaders', value: identifier(generator, p.name), encoding: p.encoding }, ctx) + '\n'
+			}
+			section += 'localVarHeaders.forEach { this.headers.append(it.first, it.second) }\n'
+		}
+		sections.push(section.replace(/\n$/, ''))
+	}
+
+	const cookieParams = parameterValues(op.cookieParams)
+	if (cookieParams.length) {
+		let section = '// Set cookies\n'
+		section += 'val localVarCookies = mutableListOf<Pair<String, String>>()\n'
+		for (const p of cookieParams) {
+			section += requestParameter(p, { dest: 'localVarCookies', value: identifier(generator, p.name), encoding: p.encoding, percentEncode: true }, ctx) + '\n'
+		}
+		section += 'if (localVarCookies.isNotEmpty()) {\n'
+		section += '    this.headers.append(io.ktor.http.HttpHeaders.Cookie, localVarCookies.joinToString("; ") { "${it.first}=${it.second}" })\n'
+		section += '}'
+		sections.push(section)
+	}
+
+	const request = op.requestBody && op.requestBody.nativeType ? op.requestBody : null
+	if (request) {
+		let section = '// Set request body\n'
+		if (request.required) {
+			section += requestBody(request, 'requestBody', ctx)
+		} else {
+			section += 'requestBody?.let { localVarRequestBody ->\n'
+			section += indent(requestBody(request, 'localVarRequestBody', ctx), '    ') + '\n'
+			section += '}'
+		}
+		sections.push(section)
+	}
+
+	return sections
+}
+
+/**
  * An operation rendered as its response-status sealed class and suspend
  * function(s): the query-parameters overload when the operation has multiple
  * parameters, and the full form that performs the request, applies security,
@@ -132,26 +178,23 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	const fullPath = `${group.path}${op.path}`
 	const securityScheme = `${root.securityPackage}.SecurityScheme`
 	const apiException = `${root.supportPackage}.APIException`
-	const responses = op.responses ? idx.allValues(op.responses) : []
+	/* A 401 is never one of an operation's responses, as in the Swift client: an operation with security authenticates again,
+	   and otherwise the 401 falls through to a range, the catch-all, or an unexpected response */
+	/* A range, such as 4XX, comes after the codes that it holds, so that a code reads as its own response, and the catch-all comes last */
+	const order = (response: CodegenResponse) => response.isCatchAll ? 2 : responseRange(response) !== null ? 1 : 0
+	const responses = (op.responses ? idx.allValues(op.responses) : [])
+		.filter(response => response.code !== 401)
+		.sort((a, b) => order(a) - order(b))
+	/* The header members of each response, made once, so that each warning about a header is logged once */
+	const headerMembers = responses.map(response => responseHeaderMembers(response, op, ctx))
 
 	let out = ''
 
 	/* Response status sealed class */
 	out += `sealed class ${resultClassName} {\n`
-	for (const response of responses) {
-		if (response.code === 401) {
-			continue
-		}
-		if (response.description) {
-			out += `    /** ${response.description} */\n`
-		}
-		const label = response.isCatchAll ? 'Default' : `\`${response.code}\``
-		if (response.defaultContent && response.defaultContent.nativeType) {
-			out += `    data class ${label}(val value: ${response.defaultContent.nativeType}): ${resultClassName}()\n`
-		} else {
-			out += `    data object ${label}: ${resultClassName}()\n`
-		}
-	}
+	responses.forEach((response, index) => {
+		out += indent(responseClass(response, headerMembers[index], resultClassName), '    ') + '\n'
+	})
 	out += '}\n'
 	out += '\n'
 
@@ -184,41 +227,32 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	}
 	out += `open suspend fun ${op.name}(${params}${params ? ', ' : ''}allowsReauth: kotlin.Boolean = true): Result<${resultClassName}> {\n`
 	out += '    return withContext(Dispatchers.IO) {\n'
-	out += `        val path = "${stripLeadingSlash(fullPath)}"\n`
+	out += `        val localVarPath = ${stringLiteral(ctx.generatorContext, stripLeadingSlash(fullPath))}\n`
 	for (const p of parameterValues(op.pathParams)) {
-		out += `            .replace("{${p.serializedName}}", "$${identifier(generator, p.name)}")\n`
+		out += `            .replace(${stringLiteral(ctx.generatorContext, `{${p.serializedName}}`)}, ${indent(pathParameterValue(p, p.encoding, identifier(generator, p.name), ctx), '            ').trimStart()})\n`
 	}
 
-	const configSections: string[] = []
-	if (op.queryParams) {
-		configSections.push(requestParameter(op))
-	}
-	if (hasBody) {
-		configSections.push(requestBody(op))
-	}
+	const configSections = requestContent(op, ctx)
 	if (op.securityRequirements) {
 		configSections.push(requestAuthentication(op, securityScheme, apiException, ctx))
 	}
+	configSections.push('configuration.finalizeRequestBlock?.invoke(this)')
 
 	out += '        try {\n'
-	out += `            val response = client.${op.httpMethod.toLocaleLowerCase()}(path)`
-	if (configSections.length) {
-		out += ' {\n'
-		out += '\n'
-		for (const section of configSections) {
-			out += indent(section, '                ') + '\n'
-			out += '\n'
-		}
-		out += '            }\n'
-		out += '\n'
-	} else {
+	out += '            val response = client.request(localVarPath) {\n'
+	out += `                this.method = io.ktor.http.HttpMethod(${stringLiteral(ctx.generatorContext, op.httpMethod.toUpperCase())})\n`
+	out += '\n'
+	for (const section of configSections) {
+		out += indent(section, '                ') + '\n'
 		out += '\n'
 	}
-	out += '            return@withContext when (response.status) {\n'
+	out += '            }\n'
+	out += '\n'
+	out += '            return@withContext when (response.status.value) {\n'
 
 	if (op.securityRequirements) {
 		const securityRequirements = op.securityRequirements
-		out += '                io.ktor.http.HttpStatusCode.Unauthorized -> {\n'
+		out += '                401 -> {\n'
 		out += `                    if (!allowsReauth) return@withContext Result.failure(${apiException}.AuthenticationFailed(response))\n`
 		out += '                    val securityClient = configuration.securityClient\n'
 		out += `                        ?: return@withContext Result.failure(${apiException}.AuthenticationFailed(response))\n`
@@ -233,7 +267,7 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 				out += `                            // ${scheme.scheme.name}\n`
 				out += '                            securityClient.reauthenticate(\n'
 				out += '                                response.requestData(),\n'
-				out += `                                ${securityScheme}.${upperCase(scheme.scheme.name)},\n`
+				out += `                                ${securityScheme}.${securitySchemeConstant(scheme.scheme.name)},\n`
 				out += `                                ${scopesExpression(scheme, ctx)}\n`
 				out += '                            ).onFailure {\n'
 				out += '                                lastException = it\n'
@@ -260,21 +294,10 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	}
 
 	responses.forEach((response, index) => {
-		if (response.code !== 401) {
-			const label = response.isCatchAll ? 'Default' : `\`${response.code}\``
-			if (response.isCatchAll) {
-				out += '                else -> {\n'
-			} else {
-				out += `                io.ktor.http.HttpStatusCode.fromValue(${response.code}) -> {\n`
-			}
-			if (response.defaultContent && response.defaultContent.nativeType) {
-				out += `                    val body: ${response.defaultContent.nativeType} = response.body()\n`
-				out += `                    Result.success(${resultClassName}.${label}(body))\n`
-			} else {
-				out += `                    Result.success(${resultClassName}.${label})\n`
-			}
-			out += '                }\n'
-		}
+		const range = responseRange(response)
+		out += `                ${response.isCatchAll ? 'else' : range !== null ? `in ${range}00..${range}99` : String(response.code)} -> {\n`
+		out += indent(responseResult(response, headerMembers[index], resultClassName, ctx), '                    ') + '\n'
+		out += '                }\n'
 		if (index < responses.length - 1) {
 			out += '\n'
 		}
@@ -284,10 +307,11 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 		out += `                else -> Result.failure(${apiException}.UnexpectedResponse(response))\n`
 	}
 	out += '            }\n'
+	out += '        } catch (e: kotlinx.coroutines.CancellationException) {\n'
+	out += '            throw e\n'
 	out += '        } catch (e: Throwable) {\n'
 	out += '            Result.failure(e)\n'
 	out += '        }\n'
-	out += '\n'
 	out += '    }\n'
 	out += '}'
 

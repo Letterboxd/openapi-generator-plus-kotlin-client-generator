@@ -6,9 +6,9 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - 18.x
           - 20.x
           - 22.x
+          - 24.x
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -18,18 +18,25 @@ jobs:
           repository: 'karlvr/openapi-generator-plus-generators'
           path: 'test-input'
       # https://pnpm.io/continuous-integration
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
+      - uses: pnpm/action-setup@v4
+      # Build and lint with the Node version that the development tools need
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'pnpm'
-      - run: pnpm install
+      # The tests build the generated Kotlin with Gradle
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.8.1'
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - run: pnpm lint
       - name: Use Node.js ${{ matrix.node-version }} for test
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      # Run tests using npm as pnpm requires node >= 18
-      - run: npm test
+      - run: pnpm test

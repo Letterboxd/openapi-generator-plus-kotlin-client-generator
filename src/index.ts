@@ -6,6 +6,7 @@ import path from 'path'
 import { CodegenOptionsKotlin } from './types'
 import * as templates from './templates'
 import { KotlinModelContext, RootContext } from './templates'
+import { doubleLiteral } from './templates/helpers'
 
 export { CodegenOptionsKotlin as CodegenOptionsTypeScript } from './types'
 
@@ -17,6 +18,7 @@ function escapeString(value: string | number | boolean) {
 	value = String(value)
 	value = value.replace(/\\/g, '\\\\')
 	value = value.replace(/"/g, '\\"')
+	value = value.replace(/\$/g, '\\$')
 	value = value.replace(/\r/g, '\\r')
 	value = value.replace(/\n/g, '\\n')
 	return value
@@ -86,6 +88,7 @@ const RESERVED_WORDS = [
 	'as', 'break', 'class', 'continue', 'do', 'else', 'false', 'for', 'fun', 'if', 'in', 'interface', 'is', 'null', 'object', 'package',
 	'return', 'super', 'this', 'throw', 'true', 'try', 'typealias', 'typeof', 'val', 'var', 'when', 'while',
 	'Unknown', // for our enum cases
+	'Serializer', // for the serializers that our enums and oneOfs nest
 ]
 
 export function options(config: CodegenConfig, context: KotlinGeneratorContext): CodegenOptionsKotlin {
@@ -94,7 +97,7 @@ export function options(config: CodegenConfig, context: KotlinGeneratorContext):
 	const supportPackage = `${packageName}.support`
 
 	if (config.customTemplates !== undefined) {
-		context.log(CodegenLogLevel.WARN, 'The customTemplates config option is no longer supported: templates are TypeScript code and are customized via the generator\'s typed template APIs')
+		context.log(CodegenLogLevel.WARN, 'The customTemplates config option is no longer supported, because the templates are now TypeScript code in the generator. To change the generated code, fork the generator.')
 	}
 
 	const gradle = configObject(config, 'gradle', undefined)
@@ -207,7 +210,8 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			}
 
 			if (schemaType === CodegenSchemaType.ENUM) {
-				return `${options.nativeType.concreteType}.${context.generator().toEnumMemberName(String(value))}`
+				/* Core makes the names of the members unique, which the options don't say, so the literal looks the member up by its value */
+				return `${options.nativeType.concreteType}.valueOf("${escapeString(String(value))}")`
 			}
 
 			switch (type) {
@@ -246,14 +250,16 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (format === 'float') {
 						return `${value}f`
 					} else if (format === 'double' || !format) {
-						return `${value}`
+						return doubleLiteral(String(value))
 					} else {
 						throw new Error(`Unsupported ${type} format: ${format}`)
 					}
 				}
 				case 'string': {
 					if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
-						throw new Error(`toLiteral with type string called with unsupported type: ${typeof value} (${value})`)
+						/* A specification may give a value, such as an example, that doesn't match the schema */
+						context.log(CodegenLogLevel.WARN, `Literal value of type ${typeof value} is unsupported for schema type string: ${debugStringify(value)}`)
+						return null
 					}
 
 					if (format === 'byte') {
@@ -307,7 +313,11 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					if (!component) {
 						throw new Error(`toLiteral cannot format array literal without a component type: ${value}`)
 					}
-					return `listOf(${arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component })).join(', ')})`
+					const literals = arrayValue.map(v => context.generator().toLiteral(v, { ...component.schema, ...component }))
+					if (literals.some(literal => literal === null)) {
+						return null
+					}
+					return `listOf(${literals.join(', ')})`
 				}
 			}
 
@@ -393,20 +403,12 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				case CodegenSchemaType.FILE: {
 					return new context.NativeType(generatorOptions.binaryRepresentation)
 				}
-				case CodegenSchemaType.ANY: {
-					return new context.NativeType('kotlin.Any', {
-						info: {
-							serialized: '@kotlinx.serialization.Contextual kotlin.Any',
-						},
-					})
-				}
-				case CodegenSchemaType.NULL: {
-					return new context.NativeType('kotlin.Any', {
-						info: {
-							serialized: '@kotlinx.serialization.Contextual kotlin.Any',
-						},
-					})
-				}
+				case CodegenSchemaType.ANY:
+					/* A value of any type, which we keep as the JSON that it arrived as */
+					return new context.NativeType('kotlinx.serialization.json.JsonElement')
+				case CodegenSchemaType.NULL:
+					/* The JSON Schema null type permits exactly one value, so we use a type that can only hold that value */
+					return new context.NativeType('kotlinx.serialization.json.JsonNull')
 			}
 
 			throw new Error(`Unsupported schema type: ${schemaType}`)
@@ -613,7 +615,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 					return { value: [], literalValue: `listOf<${nativeType.componentType}>()` }
 				case CodegenSchemaType.MAP:
 					/* Initialise empty map properties with an empty map */
-					return { value: {}, literalValue: `mapOf<${nativeType.componentType}>()` }
+					return { value: {}, literalValue: 'mapOf()' }
 				default:
 					return null
 			}
@@ -719,12 +721,15 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			const supportPackagePath = packageToPath(generatorOptions.supportPackage)
 			const supportFiles: [string, (ctx: KotlinModelContext) => string][] = [
 				['APIException.kt', templates.apiException],
+				['APIResponse.kt', templates.apiResponse],
 				['Configuration.kt', templates.configuration],
 				['DateTime.kt', templates.dateTime],
 				['Nullable.kt', templates.nullable],
 				['Types.kt', templates.supportTypes],
 				['URLSerializer.kt', templates.urlSerializer],
 				['UUIDSerializer.kt', templates.uuidSerializer],
+				['SerializersModule.kt', templates.serializersModule],
+				['JsonSerializedForm.kt', templates.jsonSerializedForm],
 			]
 			for (const [fileName, template] of supportFiles) {
 				await emitTemplate(template(modelContext), path.join(outputPath, relativeSourceOutputPath, supportPackagePath, fileName), true)

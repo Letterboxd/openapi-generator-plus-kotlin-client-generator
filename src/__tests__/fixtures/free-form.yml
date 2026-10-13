@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Free-form objects
+  description: Object schemas that describe no properties, and maps of any value, whose JSON a client must keep.
+  version: '1.0'
+paths:
+  /holder:
+    post:
+      operationId: postHolder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Holder'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Holder'
+components:
+  schemas:
+    FreeForm:
+      type: object
+      description: An object that describes no properties.
+    Status:
+      type: string
+      enum: [active, inactive]
+    Holder:
+      type: object
+      required: [content, body]
+      properties:
+        content:
+          type: object
+          description: An inline object that describes no properties.
+        body:
+          type: object
+          additionalProperties: true
+          description: A map of any values.
+        nullableBody:
+          type: object
+          nullable: true
+          additionalProperties: true
+        emptyAdditionalProperties:
+          type: object
+          additionalProperties: {}
+        freeForm:
+          $ref: '#/components/schemas/FreeForm'
+        anything: {}
+        strings:
+          type: object
+          additionalProperties:
+            type: string
+        status:
+          $ref: '#/components/schemas/Status'
