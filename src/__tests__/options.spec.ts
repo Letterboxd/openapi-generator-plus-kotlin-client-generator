@@ -154,7 +154,7 @@ describe('request builders', () => {
 		expect(customise).toBeGreaterThan(parameters)
 		expect(security).toBeGreaterThan(customise)
 		expect(finalize).toBeGreaterThan(security)
-  })
+	})
 })
 
 describe('enum companions', () => {

@@ -46,7 +46,7 @@ import kotlinx.serialization.serializer
 /**
  * Makes the requests that [${apiClassName}] sends, without sending them.
  *
- * Reach for this when you need to make a request that the API specification doesn't describe: make
+ * Use this when you need to make a request that the API specification doesn't describe: make
  * the request, customise it with [${root.supportPackage}.APIRequest.customize], then send it with
  * [${root.supportPackage}.APIRequest.execute] so it still goes through the client's security,
  * reauthentication and response handling. Prefer [${apiClassName}]'s own functions otherwise, and

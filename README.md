@@ -156,11 +156,10 @@ The API classes encode and decode JSON with `Configuration.json`. Change it with
 ## Customising a request
 
 Prefer each API class's own functions, and describe any request you need in the API specification.
-When you can't — such as when the query parameters come from elsewhere at run time — each API class
-has a request builder, such as `PetsApiRequestBuilder` for `PetsApi`, as a way out. Its functions make
-an operation's request without sending it, as an `APIRequest`. Customise the request with Ktor's
-`HttpRequestBuilder`, then send it, and it still goes through the client's security,
-reauthentication and response handling:
+When you can't, each API class has a request builder, such as `PetsApiRequestBuilder` for `PetsApi`,
+as a way out. Its functions make an operation's request without sending it, as an `APIRequest`.
+Customise the request with Ktor's `HttpRequestBuilder`, then send it. It still goes through the
+client's security, reauthentication and response handling:
 
 ```kotlin
 val result = PetsApiRequestBuilder(configuration)
