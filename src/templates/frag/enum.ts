@@ -26,7 +26,7 @@ sealed class ${name}${serializable ? ' : java.io.Serializable' : ''} {
          * Returns all enum cases in an immutable list, excluding the unknown case. It's made when it's first used,
          * because a case that's used before this class is initialized isn't yet set while the class initializes.
          */
-        val entries: List<${name}> by lazy {
+        val entries: kotlin.collections.List<${name}> by lazy {
             listOf(
                 ${each(schema.enumValues, v => `${name}.${className(generator, v.name)}`, ',\n')}
             )
@@ -43,7 +43,7 @@ sealed class ${name}${serializable ? ' : java.io.Serializable' : ''} {
         }${numeric ? ts`
 
         /** The enum cases by their values as numbers, so that a value matches however it's written, such as 1.0 for 1. */
-        private val entriesByNumber: Map<java.math.BigDecimal, ${name}> by lazy {
+        private val entriesByNumber: kotlin.collections.Map<java.math.BigDecimal, ${name}> by lazy {
             entries.associateBy { it.value.toBigDecimal().stripTrailingZeros() }
         }` : ''}
 
