@@ -9,6 +9,9 @@ import { pathParameterValue, requestParameter } from './requestParameter'
 import { requestBody } from './requestBody'
 import { acceptHeader, responseClass, responseHeaderMembers, responseRange, responseResult } from './responses'
 
+/** The type of the trailing lambda that lets a caller customise an operation's request before it's sent. */
+const CUSTOMIZE_REQUEST_TYPE = 'io.ktor.client.request.HttpRequestBuilder.() -> Unit'
+
 /** The scopes of a security requirement scheme as an inline Kotlin expression. */
 function scopesExpression(scheme: CodegenSecurityRequirementScheme, ctx: KotlinModelContext): string {
 	if (scheme.scopes && scheme.scopes.length) {
@@ -167,6 +170,7 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	const paramsSignature = parameters.map(p => `${p.name}: ${p.nativeType}${p.required ? '' : ' = null'}`)
 	const callParams = parameters.map(p => `${p.name} = ${p.name}`)
 	const requestCallParams = parameters.map(p => `${p.name} = queryParams.${p.name}`)
+	const customizeRequestParam = `customizeRequest: ${CUSTOMIZE_REQUEST_TYPE} = {}`
 	if (hasBody) {
 		paramsSignature.push(`requestBody: ${op.requestBody!.nativeType}${op.requestBody!.required ? '' : ' = null'}`)
 		callParams.push('requestBody = requestBody')
@@ -211,8 +215,8 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 			out += '@kotlin.Deprecated(message = "This function is deprecated.")\n'
 		}
 		const bodyParam = hasBody ? `, requestBody: ${op.requestBody!.nativeType}${op.requestBody!.required ? '' : ' = null'}` : ''
-		out += `open suspend fun ${op.name}(queryParams: I${queryParamsClassName}${bodyParam}): Result<${resultClassName}> {\n`
-		out += `    return ${op.name}(${requestCallParams.join(', ')}${params ? ', ' : ''}allowsReauth = true)\n`
+		out += `open suspend fun ${op.name}(queryParams: I${queryParamsClassName}${bodyParam}, ${customizeRequestParam}): Result<${resultClassName}> {\n`
+		out += `    return ${op.name}(${requestCallParams.join(', ')}${params ? ', ' : ''}allowsReauth = true, customizeRequest = customizeRequest)\n`
 		out += '}\n'
 		out += '\n'
 	}
@@ -225,7 +229,7 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	if (op.deprecated) {
 		out += '@kotlin.Deprecated(message = "This function is deprecated.")\n'
 	}
-	out += `open suspend fun ${op.name}(${params}${params ? ', ' : ''}allowsReauth: kotlin.Boolean = true): Result<${resultClassName}> {\n`
+	out += `open suspend fun ${op.name}(${params}${params ? ', ' : ''}allowsReauth: kotlin.Boolean = true, ${customizeRequestParam}): Result<${resultClassName}> {\n`
 	out += '    return withContext(Dispatchers.IO) {\n'
 	out += `        val localVarPath = ${stringLiteral(ctx.generatorContext, stripLeadingSlash(fullPath))}\n`
 	for (const p of parameterValues(op.pathParams)) {
@@ -233,6 +237,9 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	}
 
 	const configSections = requestContent(op, ctx)
+	/* After the operation's own parameters, so the caller can change or remove them, and before security and the
+	   configuration's finalizeRequestBlock, so a customised request is still authorized and finalized */
+	configSections.push('// Apply the caller\'s customisation\ncustomizeRequest()')
 	if (op.securityRequirements) {
 		configSections.push(requestAuthentication(op, securityScheme, apiException, ctx))
 	}
@@ -288,7 +295,7 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 			out += '                    }\n'
 		}
 		out += '\n'
-		out += `                    return@withContext ${op.name}(${callParams.join(', ')}${params ? ', ' : ''}allowsReauth = false)\n`
+		out += `                    return@withContext ${op.name}(${callParams.join(', ')}${params ? ', ' : ''}allowsReauth = false, customizeRequest = customizeRequest)\n`
 		out += '                }\n'
 		out += '\n'
 	}

@@ -153,6 +153,24 @@ fails with `APIException.UnexpectedResponse`. A response that doesn't declare th
 The API classes encode and decode JSON with `Configuration.json`. Change it with the
 `jsonBuilder` option of `Configuration`.
 
+## Customising a request
+
+Each operation takes a trailing `customizeRequest` lambda that receives Ktor's `HttpRequestBuilder`
+once the operation's own parameters, headers and body are applied. Use it to make a request that the
+specification doesn't describe — such as adding or replacing query parameters that come from
+elsewhere — while still going through the client's security, reauthentication and response handling:
+
+```kotlin
+val result = myApi.articles(perPage = 20) {
+    url.parameters.remove("sort")
+    url.parameters.append("sort", "Popularity")
+}
+```
+
+The lambda runs before the request is authorized and before the configuration's
+`finalizeRequestBlock`, and runs again if the request is sent again after reauthenticating. Prefer the
+operation's own parameters otherwise.
+
 ## Development
 
 To use this library in development we use the `link` command.

@@ -121,3 +121,28 @@ describe('enum members', () => {
 		expect(names).toContain('KNOWN')
 	})
 })
+
+describe('customizeRequest', () => {
+	test('is a trailing lambda on every operation, passed on by the overload and the retry', async() => {
+		const read = await generate('customize-request', {}, 'fixtures/customize-request.yml')
+		const api = read('ThingsApi.kt')
+		const lambda = 'customizeRequest: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {}'
+		expect(api).toContain(`allowsReauth: kotlin.Boolean = true, ${lambda}): Result<GetThingsResponseStatus>`)
+		expect(api).toContain(`getThings(queryParams: IGetThingsQueryParams, ${lambda}): Result<GetThingsResponseStatus>`)
+		expect(api).toContain('allowsReauth = true, customizeRequest = customizeRequest)')
+		expect(api).toContain('allowsReauth = false, customizeRequest = customizeRequest)')
+	})
+
+	test('runs after the parameters are applied, and before security and finalizeRequestBlock', async() => {
+		const read = await generate('customize-request-order', {}, 'fixtures/customize-request.yml')
+		const api = read('ThingsApi.kt')
+		const parameters = api.indexOf('this.url.parameters.append(')
+		const customise = api.indexOf('customizeRequest()')
+		const security = api.indexOf('// Set request authentication')
+		const finalize = api.indexOf('configuration.finalizeRequestBlock?.invoke(this)')
+		expect(parameters).toBeGreaterThan(-1)
+		expect(customise).toBeGreaterThan(parameters)
+		expect(security).toBeGreaterThan(customise)
+		expect(finalize).toBeGreaterThan(security)
+	})
+})
