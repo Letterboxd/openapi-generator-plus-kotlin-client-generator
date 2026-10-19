@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Customising requests
+  title: Request builders
   version: 1.0.0
 security:
   - token: []

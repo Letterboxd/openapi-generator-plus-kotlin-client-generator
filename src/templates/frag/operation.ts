@@ -9,9 +9,6 @@ import { pathParameterValue, requestParameter } from './requestParameter'
 import { requestBody } from './requestBody'
 import { acceptHeader, responseClass, responseHeaderMembers, responseRange, responseResult } from './responses'
 
-/** The type of the trailing lambda that lets a caller customise an operation's request before it's sent. */
-const CUSTOMIZE_REQUEST_TYPE = 'io.ktor.client.request.HttpRequestBuilder.() -> Unit'
-
 /** The scopes of a security requirement scheme as an inline Kotlin expression. */
 function scopesExpression(scheme: CodegenSecurityRequirementScheme, ctx: KotlinModelContext): string {
 	if (scheme.scopes && scheme.scopes.length) {
@@ -154,34 +151,77 @@ function requestContent(op: CodegenOperation, ctx: KotlinModelContext): string[]
 	return sections
 }
 
-/**
- * An operation rendered as its response-status sealed class and suspend
- * function(s): the query-parameters overload when the operation has multiple
- * parameters, and the full form that performs the request, applies security,
- * and maps the response status to a result.
- */
-export function operation(op: CodegenOperation, group: CodegenOperationGroup, ctx: KotlinModelContext): string {
-	const generator = ctx.generatorContext.generator()
-	const root = ctx.root
+/** The type of the lambda that an [APIRequest] uses to customise the request that it sends. */
+const CUSTOMIZE_REQUEST_TYPE = 'io.ktor.client.request.HttpRequestBuilder.() -> Unit'
 
+/** The values that the API class and the request builder work out about an operation. */
+interface OperationParts {
+	/** The parameters in the signature of the function that takes them all, with defaults for the optional ones. */
+	params: string
+	/** The parameters in a signature, without defaults, for the private function that performs the request. */
+	performParams: string
+	/** The arguments passing each parameter on by name. */
+	callParams: string[]
+	/** The arguments passing each parameter on by name from a `queryParams` object. */
+	requestCallParams: string[]
+	/** The request body parameter for the query-parameters overload, with a leading comma, if there's a body. */
+	bodyParam: string
+	resultClassName: string
+	queryParamsClassName: string | null
+}
+
+function operationParts(op: CodegenOperation, ctx: KotlinModelContext): OperationParts {
+	const generator = ctx.generatorContext.generator()
 	const parameters = parameterValues(op.parameters)
 	const hasBody = !!(op.requestBody && op.requestBody.nativeType)
 
 	const paramsSignature = parameters.map(p => `${p.name}: ${p.nativeType}${p.required ? '' : ' = null'}`)
+	const performSignature = parameters.map(p => `${p.name}: ${p.nativeType}`)
 	const callParams = parameters.map(p => `${p.name} = ${p.name}`)
 	const requestCallParams = parameters.map(p => `${p.name} = queryParams.${p.name}`)
-	const customizeRequestParam = `customizeRequest: ${CUSTOMIZE_REQUEST_TYPE} = {}`
 	if (hasBody) {
 		paramsSignature.push(`requestBody: ${op.requestBody!.nativeType}${op.requestBody!.required ? '' : ' = null'}`)
+		performSignature.push(`requestBody: ${op.requestBody!.nativeType}`)
 		callParams.push('requestBody = requestBody')
 		requestCallParams.push('requestBody = requestBody')
 	}
-	const params = paramsSignature.join(', ')
 
-	const resultClassName = `${className(generator, op.name)}ResponseStatus`
-	const fullPath = `${group.path}${op.path}`
-	const securityScheme = `${root.securityPackage}.SecurityScheme`
-	const apiException = `${root.supportPackage}.APIException`
+	return {
+		params: paramsSignature.join(', '),
+		performParams: performSignature.join(', '),
+		callParams,
+		requestCallParams,
+		bodyParam: hasBody ? `, requestBody: ${op.requestBody!.nativeType}${op.requestBody!.required ? '' : ' = null'}` : '',
+		resultClassName: `${className(generator, op.name)}ResponseStatus`,
+		queryParamsClassName: parameters.length > 1 ? className(generator, `${op.name}QueryParams`) : null,
+	}
+}
+
+/** The KDoc and deprecation annotation that go before each of an operation's functions. */
+function operationPreamble(op: CodegenOperation): string {
+	let out = ''
+	const documentation = operationDocumentation(op)
+	if (typeof documentation === 'string') {
+		out += documentation + '\n'
+	}
+	if (op.deprecated) {
+		out += '@kotlin.Deprecated(message = "This function is deprecated.")\n'
+	}
+	return out
+}
+
+/** The name of the request builder's private function that performs an operation's request. */
+function performName(op: CodegenOperation, ctx: KotlinModelContext): string {
+	return `perform${className(ctx.generatorContext.generator(), op.name)}`
+}
+
+/**
+ * An operation's members in the API class: its response-status sealed class, its query-parameters
+ * holder and overload when it has multiple parameters, and the function that takes all of its
+ * parameters. The functions send the request that the group's request builder makes.
+ */
+export function operation(op: CodegenOperation, group: CodegenOperationGroup, ctx: KotlinModelContext): string {
+	const { params, callParams, requestCallParams, bodyParam, resultClassName, queryParamsClassName } = operationParts(op, ctx)
 	/* A 401 is never one of an operation's responses, as in the Swift client: an operation with security authenticates again,
 	   and otherwise the 401 falls through to a range, the catch-all, or an unexpected response */
 	/* A range, such as 4XX, comes after the codes that it holds, so that a code reads as its own response, and the catch-all comes last */
@@ -203,33 +243,74 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	out += '\n'
 
 	/* Query-parameters overload */
-	if (parameters.length > 1) {
-		const queryParamsClassName = className(generator, `${op.name}QueryParams`)
+	if (queryParamsClassName) {
 		out += parametersStruct(op, queryParamsClassName, ctx) + '\n'
 		out += '\n'
-		const overloadDocumentation = operationDocumentation(op)
-		if (typeof overloadDocumentation === 'string') {
-			out += overloadDocumentation + '\n'
-		}
-		if (op.deprecated) {
-			out += '@kotlin.Deprecated(message = "This function is deprecated.")\n'
-		}
-		const bodyParam = hasBody ? `, requestBody: ${op.requestBody!.nativeType}${op.requestBody!.required ? '' : ' = null'}` : ''
-		out += `open suspend fun ${op.name}(queryParams: I${queryParamsClassName}${bodyParam}, ${customizeRequestParam}): Result<${resultClassName}> {\n`
-		out += `    return ${op.name}(${requestCallParams.join(', ')}${params ? ', ' : ''}allowsReauth = true, customizeRequest = customizeRequest)\n`
+		out += operationPreamble(op)
+		out += `open suspend fun ${op.name}(queryParams: I${queryParamsClassName}${bodyParam}): Result<${resultClassName}> {\n`
+		out += `    return ${op.name}(${requestCallParams.join(', ')}${params ? ', ' : ''}allowsReauth = true)\n`
 		out += '}\n'
 		out += '\n'
 	}
 
 	/* The full function */
-	const documentation = operationDocumentation(op)
-	if (typeof documentation === 'string') {
-		out += documentation + '\n'
+	out += operationPreamble(op)
+	out += `open suspend fun ${op.name}(${params}${params ? ', ' : ''}allowsReauth: kotlin.Boolean = true): Result<${resultClassName}> {\n`
+	out += `    return this.apiRequestBuilder.${op.name}(${callParams.join(', ')}).execute(allowsReauth = allowsReauth)\n`
+	out += '}'
+
+	return out
+}
+
+/**
+ * An operation's members in the group's request builder: the functions that make its request without
+ * sending it, as an `APIRequest` that the caller may customise before they execute it, and the
+ * private function that performs the request, applies security, and maps the response status to a
+ * result.
+ */
+export function operationRequestBuilder(op: CodegenOperation, group: CodegenOperationGroup, ctx: KotlinModelContext): string {
+	const generator = ctx.generatorContext.generator()
+	const root = ctx.root
+	const { params, performParams, callParams, requestCallParams, bodyParam, resultClassName: localResultClassName, queryParamsClassName } = operationParts(op, ctx)
+
+	const apiClassName = `${group.name}Api`
+	const resultClassName = `${apiClassName}.${localResultClassName}`
+	const apiRequest = `${root.supportPackage}.APIRequest<${resultClassName}>`
+	const perform = performName(op, ctx)
+	const fullPath = `${group.path}${op.path}`
+	const securityScheme = `${root.securityPackage}.SecurityScheme`
+	const apiException = `${root.supportPackage}.APIException`
+	const order = (response: CodegenResponse) => response.isCatchAll ? 2 : responseRange(response) !== null ? 1 : 0
+	const responses = (op.responses ? idx.allValues(op.responses) : [])
+		.filter(response => response.code !== 401)
+		.sort((a, b) => order(a) - order(b))
+	/* Made without logging, as the API class's members already logged any warnings about the headers */
+	const quietGeneratorContext = Object.create(ctx.generatorContext, { log: { value: () => undefined } })
+	const quietCtx: KotlinModelContext = { ...ctx, generatorContext: quietGeneratorContext }
+	const headerMembers = responses.map(response => responseHeaderMembers(response, op, quietCtx))
+
+	let out = ''
+
+	/* The query-parameters overload */
+	if (queryParamsClassName) {
+		out += operationPreamble(op)
+		out += `fun ${op.name}(queryParams: ${apiClassName}.I${queryParamsClassName}${bodyParam}): ${apiRequest} {\n`
+		out += `    return ${op.name}(${requestCallParams.join(', ')})\n`
+		out += '}\n'
+		out += '\n'
 	}
-	if (op.deprecated) {
-		out += '@kotlin.Deprecated(message = "This function is deprecated.")\n'
-	}
-	out += `open suspend fun ${op.name}(${params}${params ? ', ' : ''}allowsReauth: kotlin.Boolean = true, ${customizeRequestParam}): Result<${resultClassName}> {\n`
+
+	/* The function that takes all of the parameters */
+	out += operationPreamble(op)
+	out += `fun ${op.name}(${params}): ${apiRequest} {\n`
+	out += `    return ${root.supportPackage}.APIRequest { localVarAllowsReauth, localVarCustomizeRequest ->\n`
+	out += `        ${perform}(${callParams.join(', ')}${callParams.length ? ', ' : ''}allowsReauth = localVarAllowsReauth, customizeRequest = localVarCustomizeRequest)\n`
+	out += '    }\n'
+	out += '}\n'
+	out += '\n'
+
+	/* The function that performs the request */
+	out += `private suspend fun ${perform}(${performParams}${performParams ? ', ' : ''}allowsReauth: kotlin.Boolean, customizeRequest: ${CUSTOMIZE_REQUEST_TYPE}): Result<${resultClassName}> {\n`
 	out += '    return withContext(Dispatchers.IO) {\n'
 	out += `        val localVarPath = ${stringLiteral(ctx.generatorContext, stripLeadingSlash(fullPath))}\n`
 	for (const p of parameterValues(op.pathParams)) {
@@ -239,7 +320,7 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 	const configSections = requestContent(op, ctx)
 	/* After the operation's own parameters, so the caller can change or remove them, and before security and the
 	   configuration's finalizeRequestBlock, so a customised request is still authorized and finalized */
-	configSections.push('// Apply the caller\'s customisation\ncustomizeRequest()')
+	configSections.push('// Apply the caller\'s customisations\ncustomizeRequest()')
 	if (op.securityRequirements) {
 		configSections.push(requestAuthentication(op, securityScheme, apiException, ctx))
 	}
@@ -295,7 +376,7 @@ export function operation(op: CodegenOperation, group: CodegenOperationGroup, ct
 			out += '                    }\n'
 		}
 		out += '\n'
-		out += `                    return@withContext ${op.name}(${callParams.join(', ')}${params ? ', ' : ''}allowsReauth = false, customizeRequest = customizeRequest)\n`
+		out += `                    return@withContext ${perform}(${callParams.join(', ')}${callParams.length ? ', ' : ''}allowsReauth = false, customizeRequest = customizeRequest)\n`
 		out += '                }\n'
 		out += '\n'
 	}

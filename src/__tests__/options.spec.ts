@@ -122,24 +122,34 @@ describe('enum members', () => {
 	})
 })
 
-describe('customizeRequest', () => {
-	test('is a trailing lambda on every operation, passed on by the overload and the retry', async() => {
-		const read = await generate('customize-request', {}, 'fixtures/customize-request.yml')
+describe('request builders', () => {
+	test('keep the API class free of request customisation', async() => {
+		const read = await generate('request-builder-api', {}, 'fixtures/request-builder.yml')
 		const api = read('ThingsApi.kt')
-		const lambda = 'customizeRequest: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {}'
-		expect(api).toContain(`allowsReauth: kotlin.Boolean = true, ${lambda}): Result<GetThingsResponseStatus>`)
-		expect(api).toContain(`getThings(queryParams: IGetThingsQueryParams, ${lambda}): Result<GetThingsResponseStatus>`)
-		expect(api).toContain('allowsReauth = true, customizeRequest = customizeRequest)')
-		expect(api).toContain('allowsReauth = false, customizeRequest = customizeRequest)')
+		expect(api).not.toContain('HttpRequestBuilder')
+		expect(api).toContain('open suspend fun getThings(cursor: kotlin.String? = null, perPage: kotlin.Int? = null, allowsReauth: kotlin.Boolean = true): Result<GetThingsResponseStatus>')
+		expect(api).toContain('this.apiRequestBuilder.getThings(cursor = cursor, perPage = perPage).execute(allowsReauth = allowsReauth)')
 	})
 
-	test('runs after the parameters are applied, and before security and finalizeRequestBlock', async() => {
-		const read = await generate('customize-request-order', {}, 'fixtures/customize-request.yml')
-		const api = read('ThingsApi.kt')
-		const parameters = api.indexOf('this.url.parameters.append(')
-		const customise = api.indexOf('customizeRequest()')
-		const security = api.indexOf('// Set request authentication')
-		const finalize = api.indexOf('configuration.finalizeRequestBlock?.invoke(this)')
+	test('make an APIRequest for each operation, which the retry after reauthenticating customises again', async() => {
+		const read = await generate('request-builder', {}, 'fixtures/request-builder.yml')
+		const builder = read('ThingsApiRequestBuilder.kt')
+		const apiRequest = 'com.example.api.support.APIRequest<ThingsApi.GetThingsResponseStatus>'
+		expect(builder).toContain('class ThingsApiRequestBuilder(')
+		expect(builder).toContain(`fun getThings(cursor: kotlin.String? = null, perPage: kotlin.Int? = null): ${apiRequest}`)
+		expect(builder).toContain(`fun getThings(queryParams: ThingsApi.IGetThingsQueryParams): ${apiRequest}`)
+		expect(builder).toContain('private suspend fun performGetThings(')
+		expect(builder).toContain('allowsReauth = false, customizeRequest = customizeRequest)')
+		expect(read('APIRequest.kt')).toContain('fun customize(block: io.ktor.client.request.HttpRequestBuilder.() -> Unit): APIRequest<T>')
+	})
+
+	test('apply customisations after the parameters, and before security and finalizeRequestBlock', async() => {
+		const read = await generate('request-builder-order', {}, 'fixtures/request-builder.yml')
+		const builder = read('ThingsApiRequestBuilder.kt')
+		const parameters = builder.indexOf('this.url.parameters.append(')
+		const customise = builder.indexOf('customizeRequest()')
+		const security = builder.indexOf('// Set request authentication')
+		const finalize = builder.indexOf('configuration.finalizeRequestBlock?.invoke(this)')
 		expect(parameters).toBeGreaterThan(-1)
 		expect(customise).toBeGreaterThan(parameters)
 		expect(security).toBeGreaterThan(customise)
