@@ -153,6 +153,28 @@ fails with `APIException.UnexpectedResponse`. A response that doesn't declare th
 The API classes encode and decode JSON with `Configuration.json`. Change it with the
 `jsonBuilder` option of `Configuration`.
 
+## Customising a request
+
+Prefer each API class's own functions, and describe any request you need in the API specification.
+When you can't, each API class has a request builder, such as `PetsApiRequestBuilder` for `PetsApi`,
+as a way out. Its functions make an operation's request without sending it, as an `APIRequest`.
+Customise the request with Ktor's `HttpRequestBuilder`, then send it. It still goes through the
+client's security, reauthentication and response handling:
+
+```kotlin
+val result = PetsApiRequestBuilder(configuration)
+    .listPets(limit = 20)
+    .customize {
+        url.parameters.remove("sort")
+        url.parameters.append("sort", "Newest")
+    }
+    .execute()
+```
+
+A customisation receives the request once the operation's own parameters, headers and body are
+applied. It runs before the request is authorized and before the configuration's
+`finalizeRequestBlock`, and runs again if the request is sent again after reauthenticating.
+
 ## Development
 
 To use this library in development we use the `link` command.

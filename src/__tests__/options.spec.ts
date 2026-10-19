@@ -122,6 +122,53 @@ describe('enum members', () => {
 	})
 })
 
+describe('request builders', () => {
+	test('keep the API class free of request customisation', async() => {
+		const read = await generate('request-builder-api', {}, 'fixtures/request-builder.yml')
+		const api = read('ThingsApi.kt')
+		expect(api).not.toContain('HttpRequestBuilder')
+		expect(api).toContain('open suspend fun getThings(cursor: kotlin.String? = null, perPage: kotlin.Int? = null, allowsReauth: kotlin.Boolean = true): Result<GetThingsResponseStatus>')
+		expect(api).toContain('this.apiRequestBuilder.getThings(cursor = cursor, perPage = perPage).execute(allowsReauth = allowsReauth)')
+	})
+
+	test('make an APIRequest for each operation, which the retry after reauthenticating customises again', async() => {
+		const read = await generate('request-builder', {}, 'fixtures/request-builder.yml')
+		const builder = read('ThingsApiRequestBuilder.kt')
+		const apiRequest = 'com.example.api.support.APIRequest<ThingsApi.GetThingsResponseStatus>'
+		expect(builder).toContain('class ThingsApiRequestBuilder(')
+		expect(builder).toContain(`fun getThings(cursor: kotlin.String? = null, perPage: kotlin.Int? = null): ${apiRequest}`)
+		expect(builder).toContain(`fun getThings(queryParams: ThingsApi.IGetThingsQueryParams): ${apiRequest}`)
+		expect(builder).toContain('private suspend fun performGetThings(')
+		expect(builder).toContain('allowsReauth = false, customizeRequest = customizeRequest)')
+		expect(read('APIRequest.kt')).toContain('fun customize(block: io.ktor.client.request.HttpRequestBuilder.() -> Unit): APIRequest<T>')
+	})
+
+	test('apply customisations after the parameters, and before security and finalizeRequestBlock', async() => {
+		const read = await generate('request-builder-order', {}, 'fixtures/request-builder.yml')
+		const builder = read('ThingsApiRequestBuilder.kt')
+		const parameters = builder.indexOf('this.url.parameters.append(')
+		const customise = builder.indexOf('customizeRequest()')
+		const security = builder.indexOf('// Set request authentication')
+		const finalize = builder.indexOf('configuration.finalizeRequestBlock?.invoke(this)')
+		expect(parameters).toBeGreaterThan(-1)
+		expect(customise).toBeGreaterThan(parameters)
+		expect(security).toBeGreaterThan(customise)
+		expect(finalize).toBeGreaterThan(security)
+	})
+
+	test('import only what their operations use', async() => {
+		const read = await generate('request-builder-imports', {}, 'fixtures/request-builder.yml')
+		const builder = read('ThingsApiRequestBuilder.kt')
+		expect(builder).toContain('import com.example.api.support.decodeJsonBody\n')
+		expect(builder).toContain('import io.ktor.client.request.*\n')
+		expect(builder).toContain('import kotlinx.coroutines.withContext\n')
+		expect(builder).not.toContain('import com.example.api.support.decodeTextBody\n')
+		expect(builder).not.toContain('import com.example.api.support.decodeBinaryBody\n')
+		expect(builder).not.toContain('import io.ktor.http.formUrlEncode\n')
+		expect(builder).not.toContain('TODO')
+	})
+})
+
 describe('enum companions', () => {
 	test('qualify the Kotlin collections so models named List or Map do not shadow them', async() => {
 		const read = await generate('enum-collection-names', {}, 'fixtures/enum-collection-names.yml')

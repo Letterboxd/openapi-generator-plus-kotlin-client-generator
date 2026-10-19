@@ -667,6 +667,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 
 			const result = [
 				path.join(relativeSourceOutputPath, apiPackagePath, '*Api.kt'),
+				path.join(relativeSourceOutputPath, apiPackagePath, '*ApiRequestBuilder.kt'),
 				path.join(relativeSourceOutputPath, modelPackagePath, '*.kt'),
 			]
 			if (context.additionalCleanPathPatterns) {
@@ -707,6 +708,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 				}
 
 				await emitTemplate(templates.api(group, modelContext), path.join(outputPath, relativeSourceOutputPath, apiPackagePath, `${context.generator().toClassName(group.name)}Api.kt`), true)
+				await emitTemplate(templates.requestBuilder(group, modelContext), path.join(outputPath, relativeSourceOutputPath, apiPackagePath, `${context.generator().toClassName(group.name)}ApiRequestBuilder.kt`), true)
 			}
 
 			const modelPackagePath = packageToPath(generatorOptions.modelPackage)
@@ -735,6 +737,7 @@ export default function createGenerator(config: CodegenConfig, context: KotlinGe
 			const supportPackagePath = packageToPath(generatorOptions.supportPackage)
 			const supportFiles: [string, (ctx: KotlinModelContext) => string][] = [
 				['APIException.kt', templates.apiException],
+				['APIRequest.kt', templates.apiRequest],
 				['APIResponse.kt', templates.apiResponse],
 				['Configuration.kt', templates.configuration],
 				['DateTime.kt', templates.dateTime],
