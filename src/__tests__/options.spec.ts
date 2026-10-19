@@ -155,6 +155,18 @@ describe('request builders', () => {
 		expect(security).toBeGreaterThan(customise)
 		expect(finalize).toBeGreaterThan(security)
 	})
+
+	test('import only what their operations use', async() => {
+		const read = await generate('request-builder-imports', {}, 'fixtures/request-builder.yml')
+		const builder = read('ThingsApiRequestBuilder.kt')
+		expect(builder).toContain('import com.example.api.support.decodeJsonBody\n')
+		expect(builder).toContain('import io.ktor.client.request.*\n')
+		expect(builder).toContain('import kotlinx.coroutines.withContext\n')
+		expect(builder).not.toContain('import com.example.api.support.decodeTextBody\n')
+		expect(builder).not.toContain('import com.example.api.support.decodeBinaryBody\n')
+		expect(builder).not.toContain('import io.ktor.http.formUrlEncode\n')
+		expect(builder).not.toContain('TODO')
+	})
 })
 
 describe('enum companions', () => {
