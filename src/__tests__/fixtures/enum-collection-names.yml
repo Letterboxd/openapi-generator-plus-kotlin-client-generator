@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Models named like the Kotlin collections that enums use
+  version: 1.0.0
+paths:
+  /lists:
+    get:
+      operationId: getList
+      responses:
+        '200':
+          description: A list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+components:
+  schemas:
+    List:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        size:
+          $ref: '#/components/schemas/Size'
+      required: [status, size]
+    Map:
+      type: object
+      properties:
+        name:
+          type: string
+    Status:
+      type: string
+      enum: [Active, Inactive]
+    Size:
+      type: integer
+      enum: [1, 2]

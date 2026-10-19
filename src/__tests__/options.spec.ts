@@ -121,3 +121,12 @@ describe('enum members', () => {
 		expect(names).toContain('KNOWN')
 	})
 })
+
+describe('enum companions', () => {
+	test('qualify the Kotlin collections so models named List or Map do not shadow them', async() => {
+		const read = await generate('enum-collection-names', {}, 'fixtures/enum-collection-names.yml')
+		expect(read('Status.kt')).toContain('val entries: kotlin.collections.List<Status>')
+		expect(read('Size.kt')).toContain('val entries: kotlin.collections.List<Size>')
+		expect(read('Size.kt')).toContain('entriesByNumber: kotlin.collections.Map<java.math.BigDecimal, Size>')
+	})
+})
