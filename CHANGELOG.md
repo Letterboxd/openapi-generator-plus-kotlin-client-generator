@@ -1,5 +1,15 @@
 # @openapi-generator-plus/kotlin-client-generator
 
+## 2.1.0
+
+### Minor Changes
+
+- 5b5145c: Generate a request builder beside each API class, such as `PetsApiRequestBuilder` for `PetsApi`, as a way out for requests that the API specification doesn't describe. Its functions make an operation's request without sending it, as an `APIRequest`, which a caller can `customize` with Ktor's `HttpRequestBuilder` and then `execute`. It still goes through the client's security, reauthentication and response handling. A customisation runs after the operation's own parameters are applied, before the request is authorized and the configuration's `finalizeRequestBlock` runs, and again on the retry after reauthenticating. The API classes send the requests that their request builders make, and their functions are unchanged. This is the counterpart of the Swift client's request builders.
+
+### Patch Changes
+
+- ce3b884: Qualify the `List` and `Map` types in an enum's companion object as `kotlin.collections.List` and `kotlin.collections.Map`, as the rest of the generated code does. An API with a model named `List` or `Map` put that model in the enum's package, where it shadowed the Kotlin type and the generated client failed to compile.
+
 ## 2.0.1
 
 ### Patch Changes
